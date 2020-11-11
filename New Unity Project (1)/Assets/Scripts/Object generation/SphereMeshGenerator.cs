@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using UnityEditor;
-
 public static class SphereMeshGenerator {
     
     internal class Point_s {
@@ -52,7 +50,7 @@ public static class SphereMeshGenerator {
         }
     }
 
-    public static void construct_mesh(Mesh mesh, int number_of_points) {
+    public static void construct_mesh(Mesh mesh, int number_of_points, float radius) {
         Vector3[] vertices = new Vector3[number_of_points];
         List<Point_s> stereographic = new List<Point_s>(); // stereographic projection of vertices onto XY plane with z = 0
         int[] indicies;
@@ -65,14 +63,13 @@ public static class SphereMeshGenerator {
         float dz = 2f / number_of_points; // delta z
         float z = 1f - dz / 2f;
 
-        double t1 = EditorApplication.timeSinceStartup;
         for (int i = 0; i < number_of_points; i++) {
             float r = Mathf.Sqrt(1f - z * z);
 
             float x = Mathf.Cos(longitude)*r;
             float y = Mathf.Sin(longitude)*r;
 
-            vertices[i] = new Vector3(x, y, z);
+            vertices[i] = radius * new Vector3(x, y, z);
 
             // project to plane sorted
             stereographic.Add(new Point_s(i, x / (1f - z), y / (1f - z)));
@@ -87,9 +84,6 @@ public static class SphereMeshGenerator {
             if (p1.location.y < p2.location.y) return -1;
             return 1;
         });
-        double t2 = EditorApplication.timeSinceStartup;
-
-        Debug.Log(t2 - t1);
 
         // triangulate given points
         indicies = triangulate(stereographic, number_of_points);
@@ -152,7 +146,6 @@ public static class SphereMeshGenerator {
         Point_s last_point = points[p3];
 
         // iterating trough the rest  of points
-        double t1 = EditorApplication.timeSinceStartup;
         foreach (var c_point in points) {
             // if point is projected at infinity
             if (c_point.location.normalized.magnitude == 0) {
@@ -278,11 +271,7 @@ public static class SphereMeshGenerator {
 
             last_point = c_point;
         }
-        double t2 = EditorApplication.timeSinceStartup;
 
-        Debug.Log(t2 - t1);
-
-        t1 = EditorApplication.timeSinceStartup;
         // // list all the triangles
         List<int []> triangles = new List<int []>(); // list of triangles
 
@@ -305,11 +294,7 @@ public static class SphereMeshGenerator {
                 triangles.Add(make_a_triangle(points[i], points[i].connections[relevant_connections[k].value], points[i].connections[relevant_connections[k + 1].value]));
             }
         }
-        t2 = EditorApplication.timeSinceStartup;
 
-        Debug.Log(t2 - t1);
-
-        t1 = EditorApplication.timeSinceStartup;
         // // calculating remaining open points
         List<Point_s> hole = new List<Point_s>();
 
@@ -337,8 +322,6 @@ public static class SphereMeshGenerator {
             indicies[3 * i + 1] = triangles[i][1];
             indicies[3 * i + 2] = triangles[i][2];
         }
-        t2 = EditorApplication.timeSinceStartup;
-        Debug.Log(t2 - t1);
         return indicies;
     }
     
