@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/Scenes/Litinum.unity
+- path: Assets/Scenes/Androiid172.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
