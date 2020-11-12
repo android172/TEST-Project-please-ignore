@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class Planet : MonoBehaviour {
 
-    bool first = true;
+    bool initialized = false;
     [SerializeField, HideInInspector]
     MeshFilter mesh_filter;
+    public SphereMeshGenerator generator;
 
     // settings
     [Range(20, 20000)]
@@ -15,24 +16,8 @@ public class Planet : MonoBehaviour {
     public ColorSettings color_settings;
 
 
-    private void OnValidate() {
-        if (first) {
-            initialize();
-            first = false;
-        }
-        generate_mesh();
-        generate_color();
-    }
-
-    public void OnShapeSettingsUpdated() {
-        generate_mesh();
-    }
-    public void OnColorSettingsUpdated() {
-        generate_color();
-    }
 
     void initialize() {
-        
         if (transform.Find("Mesh") != null) return;
 
         GameObject meshObj = new GameObject("Mesh");
@@ -41,12 +26,30 @@ public class Planet : MonoBehaviour {
 
         mesh_filter = meshObj.AddComponent<MeshFilter>();
         mesh_filter.sharedMesh = new Mesh();
+
+        generator = new SphereMeshGenerator(mesh_filter.sharedMesh);
     }
 
+    public void generate_planet() {
+        if (!initialized) {
+            initialize();
+            initialized = true;
+        }
+        generate_mesh();
+        generate_color();
+    }
     private void generate_mesh() {
-        SphereMeshGenerator.construct_mesh(mesh_filter.sharedMesh, resolution, shape_settings.radius);
+        if (generator == null) generator = new SphereMeshGenerator(mesh_filter.sharedMesh);
+        generator.construct_mesh(resolution, shape_settings);
     }
     private void generate_color() {
         mesh_filter.GetComponent<MeshRenderer>().sharedMaterial.color = color_settings.planet_color;
+    }
+
+    public void OnShapeSettingsUpdated() {
+        generate_mesh();
+    }
+    public void OnColorSettingsUpdated() {
+        generate_color();
     }
 }

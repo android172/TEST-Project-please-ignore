@@ -13,3 +13,11 @@ MonoBehaviour:
   m_Name: PlanetShape
   m_EditorClassIdentifier: 
   radius: 1
+  noise_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
+  noise_settings:
+  - number_of_layers: 6
+    amplitude_fading: 0.196
+    frequency_multiplier: 3.27
+    strength: 0.45
+    base_frequency: 1.01
+    center: {x: 2.44, y: 2.14, z: 5.89}

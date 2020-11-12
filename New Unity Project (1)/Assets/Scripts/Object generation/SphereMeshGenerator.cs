@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class SphereMeshGenerator {
-    
+public class SphereMeshGenerator {
+
     internal class Point_s {
         internal int id;
         internal Vector2 location;
@@ -50,49 +50,110 @@ public static class SphereMeshGenerator {
         }
     }
 
-    public static void construct_mesh(Mesh mesh, int number_of_points, float radius) {
+    Mesh target_mesh;
+
+    Vector3[] vertices_already_generated;
+    int[] indicies_already_generated;
+    int number_of_points_already_generated;
+
+    public SphereMeshGenerator(Mesh mesh) {
+        target_mesh = mesh;
+        vertices_already_generated = null;
+        indicies_already_generated = null;
+        number_of_points_already_generated = -1;
+    }
+
+    public void construct_mesh(int number_of_points, ShapeSettings settings) {
         Vector3[] vertices = new Vector3[number_of_points];
-        List<Point_s> stereographic = new List<Point_s>(); // stereographic projection of vertices onto XY plane with z = 0
         int[] indicies;
 
-        Vector3[] plane = new Vector3[number_of_points];
+        // // Calculate unit sphere with equally spaced points
+        if (number_of_points != number_of_points_already_generated) {
+            List<Point_s> stereographic = new List<Point_s>(); // stereographic projection of vertices onto XY plane with z = 0
 
-        // Generate sphere points
-        float s = 3.6f / Mathf.Sqrt(number_of_points);
-        float longitude = 0f;
-        float dz = 2f / number_of_points; // delta z
-        float z = 1f - dz / 2f;
+            Vector3[] plane = new Vector3[number_of_points];
 
-        for (int i = 0; i < number_of_points; i++) {
-            float r = Mathf.Sqrt(1f - z * z);
+            // Generate sphere points
+            float s = 3.6f / Mathf.Sqrt(number_of_points);
+            float longitude = 0f;
+            float dz = 2f / number_of_points; // delta z
+            float z = 1f - dz / 2f;
 
-            float x = Mathf.Cos(longitude)*r;
-            float y = Mathf.Sin(longitude)*r;
+            for (int i = 0; i < number_of_points; i++) {
+                float r = Mathf.Sqrt(1f - z * z);
 
-            vertices[i] = radius * new Vector3(x, y, z);
+                float x = Mathf.Cos(longitude) * r;
+                float y = Mathf.Sin(longitude) * r;
 
-            // project to plane sorted
-            stereographic.Add(new Point_s(i, x / (1f - z), y / (1f - z)));
+                vertices[i] = new Vector3(x, y, z);
 
-            // iterate
-            z -= dz;
-            longitude += + s / r;
+                // project to plane sorted
+                stereographic.Add(new Point_s(i, x / (1f - z), y / (1f - z)));
+
+                // iterate
+                z -= dz;
+                longitude += +s / r;
+            }
+
+            // sort projected points for triangulation
+            stereographic.Sort((p1, p2) => {
+                if (p1.location.x < p2.location.x) return -1;
+                if (p1.location.x > p2.location.x) return 1;
+                if (p1.location.y < p2.location.y) return -1;
+                return 1;
+            });
+
+            // triangulate given points
+            indicies = triangulate(stereographic, number_of_points);
+
+            vertices_already_generated = vertices;
+            indicies_already_generated = indicies;
+            number_of_points_already_generated = number_of_points;
         }
-        stereographic.Sort((p1, p2) => {
-            if (p1.location.x < p2.location.x) return -1;
-            if (p1.location.x > p2.location.x) return  1;
-            if (p1.location.y < p2.location.y) return -1;
-            return 1;
-        });
+        else {
+            vertices_already_generated.CopyTo(vertices, 0);
+            indicies = indicies_already_generated;
+        }
 
-        // triangulate given points
-        indicies = triangulate(stereographic, number_of_points);
+        // // deform sphere according to the given settings
+        if (settings.noise_settings.Length > 0) {
+            // calculate each points height
+            ComputeShader shader = settings.noise_shader;
+            int kernel_id = shader.FindKernel("CSMain");
 
-        // construct new mesh
-        mesh.Clear();
-        mesh.vertices = vertices;
-        mesh.triangles = indicies;
-        mesh.RecalculateNormals();
+            float[] heights = new float[number_of_points];
+            ComputeBuffer heights_buf = new ComputeBuffer(number_of_points, sizeof(float));
+            heights_buf.SetData(heights);
+            shader.SetBuffer(kernel_id, "heights", heights_buf);
+
+            ComputeBuffer vertices_buf = new ComputeBuffer(number_of_points, 3 * sizeof(float));
+            vertices_buf.SetData(vertices);
+            shader.SetBuffer(kernel_id, "vertices", vertices_buf);
+
+            shader.SetInt("num_of_vertices", number_of_points);
+
+            ComputeBuffer settings_buf = new ComputeBuffer(1, sizeof(int) + 7 * sizeof(float));
+            settings_buf.SetData(settings.noise_settings);
+            shader.SetBuffer(kernel_id, "settings", settings_buf);
+
+            shader.Dispatch(kernel_id, 1024, 1, 1);
+
+            heights_buf.GetData(heights);
+            for (int i = 0; i < number_of_points; i++) {
+                vertices[i] *= settings.radius * (1f + heights[i]);
+            }
+
+            heights_buf.Release();
+            vertices_buf.Release();
+            settings_buf.Release();
+        }
+
+
+        // // construct mesh
+        target_mesh.Clear();
+        target_mesh.vertices = vertices;
+        target_mesh.triangles = indicies;
+        target_mesh.RecalculateNormals();
     }
 
     static int[] triangulate(List<Point_s> points, int number_of_points) {
