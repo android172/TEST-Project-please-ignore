@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b3f7ae6581e1ea4ca7122dd464d187b, type: 3}
   m_Name: PlanetShape
   m_EditorClassIdentifier: 
-  radius: 1
+  radius: 6.97
   noise_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
   noise_settings:
   - number_of_layers: 6
-    amplitude_fading: 0.196
-    frequency_multiplier: 3.27
-    strength: 0.45
-    base_frequency: 1.01
-    center: {x: 2.44, y: 2.14, z: 5.89}
+    amplitude_fading: 0.31
+    frequency_multiplier: 4.09
+    strength: 0.23
+    base_frequency: 1.93
+    center: {x: -0.99, y: 9.81, z: -11.57}
