@@ -52,3 +52,4 @@ void CSMain(uint id : SV_DispatchThreadID) {
 	height /= 3;
 	vertices[id] *= radius * (1 + 0.5 * height);
 }
+
