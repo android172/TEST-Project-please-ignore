@@ -10,7 +10,7 @@ public class Planet : MonoBehaviour {
     public SphereMeshGenerator generator;
 
     // settings
-    [Range(20, 20000)]
+    [Range(20, 65535)]
     public int resolution = 50;
     public ShapeSettings shape_settings;
     public ColorSettings color_settings;
