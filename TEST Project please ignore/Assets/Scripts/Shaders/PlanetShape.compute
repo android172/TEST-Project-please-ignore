@@ -1,0 +1,55 @@
+﻿// includes
+#include "./Includes/Noise/FractalNoise.cginc"
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Height information
+RWStructuredBuffer<float3> vertices;
+uint num_of_vertices;
+float radius;
+
+// settings
+float4 noise_settings_continent_shape[3];
+float4 noise_settings_both[3];
+float4 noise_settings_mountains[3];
+float4 noise_settings_ocean_mountains[3];
+float4 noise_settings_flatness[3];
+
+float continent_base;
+float ocean_depth;
+float flatness_ratio;
+
+// functions used
+float snoise(float3 v);
+
+
+[numthreads(1024, 1, 1)]
+void CSMain(uint id : SV_DispatchThreadID) {
+	if (id >= num_of_vertices) { return; }
+
+	float height;
+	// continent / ocean mask //
+	height = clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base);
+	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - ocean_depth) / (continent_base - ocean_depth);;
+	float ocean_mask = (height == ocean_depth) ? 1 : 0;
+
+	// both //
+	// flatness //
+	float flatness = (1.0 + fractal_noise(vertices[id], noise_settings_flatness)) / 2;
+	flatness = (flatness > flatness_ratio) ? 1 : 0.1;
+	// bumps
+	height += fractal_noise(vertices[id], noise_settings_both) * flatness;
+
+	// continent //
+	// mountains
+	height += ridge_noise(vertices[id], noise_settings_mountains) * continent_mask * flatness;
+
+	// ocean //
+	// underwater mountains
+	height += ridge_noise_2(vertices[id], noise_settings_ocean_mountains) * ocean_mask;
+
+	height /= 3;
+	vertices[id] *= radius * (1 + 0.5 * height);
+}
+

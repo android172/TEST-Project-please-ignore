@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7530ff6b89c400b4ab3d49e3e3574022, type: 3}
+  m_Name: TestPlanetShapeSettings
+  m_EditorClassIdentifier: 
+  noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
+  radius: 1.06
+  continent_ratio: 0.528
+  ocean_depth: 0.077
+  flatness: 0
+  continent_noise:
+    number_of_layers: 4
+    amplitude_fading: 0.32
+    base_frequency: 1.12
+    frequency_multiplier: 4.89
+    strength: 16.6
+    base_height: 13.27
+    seed: {x: 7821, y: -223, z: 8.07}
+  flatness_noise:
+    number_of_layers: 4
+    amplitude_fading: 0
+    base_frequency: 0
+    frequency_multiplier: 0
+    strength: 0
+    base_height: 0
+    seed: {x: 0, y: 0, z: 0}
+  general_noise:
+    number_of_layers: 10
+    amplitude_fading: 0.5
+    base_frequency: 3.3
+    frequency_multiplier: 2
+    strength: 1.93
+    base_height: 0
+    seed: {x: -58.14, y: 67.83, z: -113.07}
+  mountains_noise:
+    number_of_layers: 7
+    amplitude_fading: 0.3
+    base_frequency: 3.04
+    frequency_multiplier: 4.7
+    strength: 0.57
+    base_height: 0
+    seed: {x: -29.54, y: -37.29, z: 22.33}
+  power: 4.58
+  gain: 0.819
+  underwater_mountains_noise:
+    number_of_layers: 4
+    amplitude_fading: 0
+    base_frequency: 0
+    frequency_multiplier: 0
+    strength: 0
+    base_height: 0
+    seed: {x: 0, y: 0, z: 0}
+  u_power: 0
+  u_gain: 0
+  offset: 0

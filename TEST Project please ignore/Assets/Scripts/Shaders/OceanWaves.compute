@@ -1,0 +1,16 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel WaveCompute
+
+// Height information
+RWStructuredBuffer<float3> vertices;
+uint num_of_vertices;
+float radius;
+
+[numthreads(1024,1,1)]
+void WaveCompute (uint id : SV_DispatchThreadID) {
+    if (id >= num_of_vertices) { return; }
+
+    // TODO: wave compute
+
+    vertices[id] *= radius;
+}
