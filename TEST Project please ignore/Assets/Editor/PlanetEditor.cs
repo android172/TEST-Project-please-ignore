@@ -27,7 +27,7 @@ public class PlanetEditor : Editor {
             if (check.changed) on_settings_updated?.Invoke();
         }
     }
-
+    
     public override void OnInspectorGUI() {
         using (var check = new EditorGUI.ChangeCheckScope()) {
             base.OnInspectorGUI();
