@@ -10,6 +10,8 @@ public class SphereMeshGenerator {
         internal Vector2 left_limit_v, right_limit_v;
         // connection 0 is left limit point, connection 1 is right limit point
         internal List<Point_s> connections; 
+        // flag used in triangulation
+        internal bool connected_to_last_point;
 
         internal Point_s(int id, float x, float y) {
             this.id = id;
@@ -17,43 +19,13 @@ public class SphereMeshGenerator {
             connections = new List<Point_s>();
             connections.Add(null);
             connections.Add(null);
-        }
-
-        // Overrides and Operators
-        public static bool operator <(Point_s p1, Point_s p2) {
-            if (p2 == null) return false;
-            if (p2 == null) return false;
-            if (p1.location.x < p2.location.x) return true;
-            else if (p1.location.x > p2.location.x) return false;
-            if (p1.location.y < p2.location.y) return true;
-            return false;
-        }
-        public static bool operator >(Point_s p1, Point_s p2) {
-            if (p1.location.x > p2.location.x) return true;
-            else if (p1.location.x < p2.location.x) return false;
-            if (p1.location.y > p2.location.y) return true;
-            return false;
-        }
-
-        // override object.Equals
-        public override bool Equals(object obj) {
-            if (obj == null || GetType() != obj.GetType()) {
-                return false;
-            }
-            Point_s other = (Point_s)obj;
-            if (this.id == other.id) return true;
-            return false;
-        }
-
-        // override object.GetHashCode
-        public override int GetHashCode() {
-            return this.id;
+            connected_to_last_point = true;
         }
     }
 
     // params
     private Mesh[] target_mesh_list;
-    private int vertices_per_mesh;
+    private const int vertices_per_mesh = 50000;
 
     // already generated
     private Vector3[] vertices;
@@ -66,65 +38,106 @@ public class SphereMeshGenerator {
 
     // methods
     // constructor
-    public SphereMeshGenerator(Mesh[] mesh_list) {
-        target_mesh_list = mesh_list;
+    public SphereMeshGenerator() {
         vertices = null;
         indices = null;
         number_of_points_already_generated = -1;
     }
+    // set target mesh list
+    public void set_target_mesh(Mesh[] mesh_list) {
+        target_mesh_list = mesh_list;
+    }
+    // get number of groups for given number of points
+    public int get_no_of_groups(int no_of_points) {
+        return (no_of_points - 1) / vertices_per_mesh + 1;
+    }
+
+    /// DEBUG
+    Vector3[] plane;
+    ///
     
+    System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
     public void construct_mesh(int number_of_points, ShapeSettings settings) {
         // construct unit sphere
         if (number_of_points != number_of_points_already_generated) {
             construct_unit_sphere(number_of_points);
+            sw.Reset();
+            sw.Start();
             subdivide_meshes(number_of_points);
+            sw.Stop();
+            Debug.Log("Subdeivision : " + sw.Elapsed);
         }
 
+        sw.Reset();
+        sw.Start();
         // deform sphere according to the given settings
-        Vector3[] vertices = settings.apply_noise(this.vertices, number_of_points);
+        Vector3[][] sub_mesh_v_deformed = new Vector3[sub_mesh_v.Length][];
+        for (int i = 0; i < sub_mesh_v.Length; i++)
+            sub_mesh_v_deformed[i] = settings.apply_noise(sub_mesh_v[i], sub_mesh_v[i].Length);
+
+        sw.Stop();
+        Debug.Log("Deformation : " + sw.Elapsed);
+
+        sw.Reset();
+        sw.Start();
 
         // construct mesh
-        // form_mesh();
+        for (int i = 0; i < target_mesh_list.Length; i++) {
+            target_mesh_list[i].Clear();
+            target_mesh_list[i].vertices = sub_mesh_v_deformed[i];
+            target_mesh_list[i].triangles = sub_mesh_i[i];
+            target_mesh_list[i].RecalculateNormals();
+            target_mesh_list[i].SetUVs(0, sub_mesh_v_deformed[i]);
+        }
+
+        sw.Stop();
+        Debug.Log("Mesh construction : " + sw.Elapsed);
     }
 
     // construct unit sphere with equally spaced points
     public void construct_unit_sphere(int number_of_points) {
-        vertices = new Vector3[number_of_points];
+        vertices = new Vector3[number_of_points]; plane = new Vector3[number_of_points];
         indices = new int[number_of_points];
-        List<Point_s> stereographic = new List<Point_s>(); // stereographic projection of vertices onto XY plane with z = 0
+        Point_s[] stereographic = new Point_s[number_of_points]; // stereographic projection of vertices onto XY plane with z = 0
+
+        sw.Start();
 
         // Generate sphere points
-        float s = 3.6f / Mathf.Sqrt(number_of_points);
-        float longitude = 0f;
-        float dz = 2f / number_of_points; // delta z
-        float z = 1f - dz / 2f;
+        double s = 3.6 / System.Math.Sqrt(number_of_points);
+        double longitude = 0.0;
+        double dz = 2.0 / number_of_points; // delta z
+        double z = 1.0 - dz / 2.0;
 
         for (int i = 0; i < number_of_points; i++) {
-            float r = Mathf.Sqrt(1f - z * z);
+            double r = System.Math.Sqrt(1f - z * z);
 
-            float x = Mathf.Cos(longitude) * r;
-            float y = Mathf.Sin(longitude) * r;
+            double x = System.Math.Cos(longitude) * r;
+            double y = System.Math.Sin(longitude) * r;
 
-            vertices[i] = new Vector3(x, y, z);
+            vertices[i] = new Vector3((float)x, (float)y, (float)z);
 
-            // project to plane sorted
-            stereographic.Add(new Point_s(i, x / (1f - z), y / (1f - z)));
+            // project to plane
+            stereographic[number_of_points - i - 1] = new Point_s(i, (float)(x / (1.0 - z)), (float)(y / (1.0 - z)));
+            plane[i] = new Vector3((float)(x / (1.0 - z)), (float)(y / (1.0 - z)), 0f);
 
             // iterate
             z -= dz;
+            if (z > 1.0) z = 1.0;
             longitude += +s / r;
         }
 
-        // sort projected points for triangulation
-        stereographic.Sort((p1, p2) => {
-            if (p1.location.x < p2.location.x) return -1;
-            if (p1.location.x > p2.location.x) return 1;
-            if (p1.location.y < p2.location.y) return -1;
-            return 1;
-        });
+        sw.Stop();
+        Debug.Log("Unit sphere points : " + sw.Elapsed);
 
         // triangulate given points
-        indices = triangulate(stereographic.ToArray(), number_of_points);
+
+        sw.Reset();
+        sw.Start();
+
+        indices = triangulate(stereographic, number_of_points);
+
+        sw.Stop();
+        Debug.Log("Triangulation : " + sw.Elapsed);
 
         // done
         number_of_points_already_generated = number_of_points;
@@ -135,6 +148,10 @@ public class SphereMeshGenerator {
         ////////////////////////////
         // Delaunay triangulation //
         ////////////////////////////
+
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+
         // // initialize first triangle
         // which points to work on
         int p1 = 0;
@@ -178,16 +195,16 @@ public class SphereMeshGenerator {
         bool infinity_point = false;
 
         // // initialize other triangles
-        // first connection of any new point will be to the last point included
+        // first connection of any new point will most likely be to the last point included
         // so we need to keep track of said point
         Point_s last_point = points[p3];
-
 
         // iterating trough the rest  of points
         for (int i = p3 + 1; i < number_of_points; i++) {
             Point_s c_point = points[i];
             // if point is projected at infinity
             if (c_point.location.normalized.magnitude == 0) {
+                Debug.Log("inf point : " + i);
                 infinity_point = true;
                 continue;
             }
@@ -196,7 +213,7 @@ public class SphereMeshGenerator {
             Stack<Point_s> open_p = new Stack<Point_s>();
             open_p.Push(last_point);
             // points already checked
-            Stack <Point_s> closed_p = new Stack<Point_s>();
+            Stack<Point_s> closed_p = new Stack<Point_s>();
 
             // iterating trough possible connections
             while (open_p.Count > 0) {
@@ -207,19 +224,16 @@ public class SphereMeshGenerator {
                 float left_relation = Vector2.Dot(old_point.left_limit_v, old_to_new_v);
                 float right_relation = Vector2.Dot(old_point.right_limit_v, old_to_new_v);
 
-                /// DEBUG
-                while (left_relation >= 0 && right_relation >= 0) {
-                    Debug.Log("This");
+                if (left_relation >= 0 && right_relation >= 0) {
+                    c_point.connected_to_last_point = false;
+                    while (left_relation >= 0 && right_relation >= 0  && !closed_p.Contains(old_point.connections[0])) {
+                        old_point = old_point.connections[0];
+                        closed_p.Push(old_point);
 
-                    old_point = old_point.connections[0];
-                    closed_p.Push(old_point);
-
-                    old_to_new_v = vector_a_to_b(old_point, c_point);
-                    left_relation = Vector2.Dot(old_point.left_limit_v, old_to_new_v);
-                    right_relation = Vector2.Dot(old_point.right_limit_v, old_to_new_v);
+                        left_relation = Vector2.Dot(old_point.left_limit_v, old_to_new_v);
+                        right_relation = Vector2.Dot(old_point.right_limit_v, old_to_new_v);
+                    }
                 }
-                ///
-                
 
                 // old and new point can form a triangle with the given common point
                 Point_s common_point = null;
@@ -325,28 +339,65 @@ public class SphereMeshGenerator {
             last_point = c_point;
         }
 
+        sw.Stop();
+        Debug.Log("Triangulation - reconnection : " + sw.Elapsed);
+
+        sw.Reset();
+        sw.Start();
+
         // // list all the triangles
         List<int []> triangles = new List<int []>(); // list of triangles
 
-        for (int i = 0; i < number_of_points-2; i++) {
-            List<(float angle, int value)> relevant_connections = new List<(float, int)>();
+        for (int i = 2; i < number_of_points; i++) {
+            Vector2 reference_vector;
+            if (points[i].connected_to_last_point)
+                reference_vector = vector_a_to_b(points[i], points[i - 1]).normalized;
+            else reference_vector = vector_a_to_b(points[i].connections[0], points[i]).normalized;
+            Vector2 reference_vector_n = new Vector2(-reference_vector.y, reference_vector.x);
+            List<(float x, float y, int value)> relevant_connections = new List<(float, float, int)>();
 
             int j = 0;
             foreach (var conn in points[i].connections) {
-                if (points[i] < conn) relevant_connections.Add((vector_a_to_b(points[i], conn).normalized.y, j));
+                if (conn.id > points[i].id) {
+                    Vector2 ab = vector_a_to_b(points[i], conn).normalized;
+                    relevant_connections.Add((Vector2.Dot(ab, reference_vector_n), Vector2.Dot(ab, reference_vector), j));
+                }
                 j++;
             }
-
+            
             relevant_connections.Sort((a, b) => {
-                if (a.angle < b.angle) return -1;
-                if (a.angle > b.angle) return 1;
-                return 0;
+                if (a.x * b.x < 0) {
+                    if (a.x > 0) return -1;
+                    return 1;
+                }
+                if (a.x * b.x > 0) {
+                    if (a.x > 0) {
+                        if (a.y > b.y) return -1;
+                        return 1;
+                    }
+                    if (a.y > b.y) return 1;
+                    return -1;
+                }
+                if (a.x == 0) {
+                    if (a.y > 0) return -1;
+                    if (b.x > 0) return 1;
+                    return -1;
+                }
+                if (b.y > 0) return 1;
+                if (a.x > 0) return -1;
+                return 1;
             });
 
             for (int k = 0; k < relevant_connections.Count - 1; k++) {
                 triangles.Add(make_a_triangle(points[i], points[i].connections[relevant_connections[k].value], points[i].connections[relevant_connections[k + 1].value]));
             }
         }
+
+        sw.Stop();
+        Debug.Log("Triangulation - triangle listings : " + sw.Elapsed);
+
+        sw.Reset();
+        sw.Start();
 
         // // calculating remaining open points
         List<Point_s> hole = new List<Point_s>();
@@ -355,7 +406,7 @@ public class SphereMeshGenerator {
         do {
             hole.Add(hole_point);
             hole_point = hole_point.connections[1];
-        } while (hole_point != null && hole_point != last_point);
+        } while (hole_point != last_point);
 
         if (infinity_point) {
             for (int i = 1; i < hole.Count - 1; i++) {
@@ -375,61 +426,91 @@ public class SphereMeshGenerator {
             indicies[3 * i + 1] = triangles[i][1];
             indicies[3 * i + 2] = triangles[i][2];
         }
+
+        sw.Stop();
+        Debug.Log("Triangulation - other : " + sw.Elapsed);
+
         return indicies;
     }
     
     // mesh construction
     void subdivide_meshes(int number_of_points) {
-        if (number_of_points < vertices_per_mesh) {
-            target_mesh_list[0].Clear();
-            target_mesh_list[0].vertices = vertices;
-            target_mesh_list[0].triangles = indices;
-            target_mesh_list[0].RecalculateNormals();
-            target_mesh_list[0].SetUVs(0, vertices);
+        // if there is no need for subdevision don't subdivide
+        if (number_of_points <= vertices_per_mesh) {
+            sub_mesh_i = new int[1][];
+            sub_mesh_i[0] = indices;
+            sub_mesh_v = new Vector3[1][];
+            sub_mesh_v[0] = vertices;
+
+            return;
         }
-        else {
-            int number_of_groups = number_of_points / vertices_per_mesh;
+        
+        // number of meshes that will be generated
+        int number_of_groups = (number_of_points - 1) / vertices_per_mesh + 1;
+        sub_mesh_i = new int[number_of_groups][];
+        sub_mesh_v = new Vector3[number_of_groups][];
 
-            sub_mesh_v = new Vector3[vertices_per_mesh];
-            List<int[]>[] sub_mesh_i = new List<int[]>[number_of_groups];
-            for (int i = 0; i < number_of_groups; i++)
-                sub_mesh_i[i] = new List<int[]>();
-
-            for (int i = 0; i < indices.Length; i += 3) {
-                int group = indices[i] / vertices_per_mesh;
-                if (2 * group - indices[i + 1] / vertices_per_mesh - indices[i + 2] / vertices_per_mesh == 0) {
-
+        // extra vertices starting index
+        int[] starting_duplicate = new int[number_of_groups];
+        // indices contained in given group
+        List<int>[] group_indices = new List<int>[number_of_groups];
+        
+        for (int i = 0; i < number_of_groups; i++) {
+            starting_duplicate[i] = i * vertices_per_mesh;
+            group_indices[i] = new List<int>();
+        }
+        
+        // // sub mesh indices calculation
+        // group indices
+        for (int i = 0; i < indices.Length; i += 3) {
+            int group = indices[i] / vertices_per_mesh;
+            // if all 3 indices are not in the same group
+            if (2 * group - indices[i + 1] / vertices_per_mesh - indices[i + 2] / vertices_per_mesh != 0) {
+                int group2 = indices[i + 1] / vertices_per_mesh;
+                int group3 = indices[i + 2] / vertices_per_mesh;
+                // group and duplicates calculation
+                // for second index
+                if (group2 > group) {
+                    group = group2;
+                    if (indices[i] < starting_duplicate[group]) starting_duplicate[group] = indices[i];
                 }
-                else {
-                    float group2 = Mathf.Max(indices[i], indices[i + 1], indices[i + 2]) / vertices_per_mesh;
-                    if (group == group2) group -= 1;
-                    
+                else if (group2 < group) {
+                    if (indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 1];
+                }
+                // for third index
+                if (group3 > group) {
+                    group = group3;
+                    if (indices[i] < starting_duplicate[group]) starting_duplicate[group] = indices[i];
+                    if (indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 1];
+                }
+                else if (group3 < group) {
+                    if (indices[i + 2] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 2];
                 }
             }
-
-            int k = 0;
-            for (int i = 0; i < number_of_groups + 1; i++) {
-                for (int j = 0; j < vertices_per_mesh && k < number_of_points; j++) {
-                    sub_mesh_v[j] = vertices[k++];
-                }
-
-                target_mesh_list[i].Clear();
-                target_mesh_list[i].vertices = sub_mesh_v;
-                target_mesh_list[i].triangles = indices;
-                target_mesh_list[i].RecalculateNormals();
-                target_mesh_list[i].SetUVs(0, vertices);
-            }
+            group_indices[group].Add(indices[i]);
+            group_indices[group].Add(indices[i + 1]);
+            group_indices[group].Add(indices[i + 2]);
         }
-    }
+        // distribute indices
+        for (int i = 0; i < number_of_groups; i++) {
+            sub_mesh_i[i] = new int[group_indices[i].Count];
+            for (int j = 0; j < sub_mesh_i[i].Length; j++)
+                sub_mesh_i[i][j] = group_indices[i][j] - starting_duplicate[i];
+        }
 
-    // mesh construction
-    void form_mesh() {
-        for (int i = 0; i < number_of_points_already_generated / vertices_per_mesh; i++) {
-            target_mesh_list[i].Clear();
-            target_mesh_list[i].vertices = sub_mesh_v[i];
-            target_mesh_list[i].triangles = sub_mesh_i[i];
-            target_mesh_list[i].RecalculateNormals();
-            target_mesh_list[i].SetUVs(0, sub_mesh_v[i]);
+        // // sub mesh vertices calculation
+        // calculate number of vertices for every group
+        for (int i = 0; i < number_of_groups; i++) {
+            int vertices_in_group = (i + 1) * vertices_per_mesh - starting_duplicate[i];
+            if ((i + 1) * vertices_per_mesh > number_of_points)
+                vertices_in_group = number_of_points - starting_duplicate[i];
+            sub_mesh_v[i] = new Vector3[vertices_in_group];
+        }
+        // distribute vertices
+        for (int i = 0; i < number_of_groups; i++) {
+            for (int j = 0; j < sub_mesh_v[i].Length; j++) {
+                sub_mesh_v[i][j] = vertices[starting_duplicate[i] + j];
+            }
         }
     }
 
