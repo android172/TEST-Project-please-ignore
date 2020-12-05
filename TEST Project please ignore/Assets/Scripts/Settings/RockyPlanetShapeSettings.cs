@@ -45,6 +45,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         noise_compute_shader.SetFloat("radius", radius);
 
         // send noise settings
+        noise_compute_shader.SetFloats("enabled", get_enables());
         noise_compute_shader.SetFloats("noise_settings_continent_shape", get_continent_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_flatness", get_flatness_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_both", get_general_noise_settings());
@@ -72,6 +73,15 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         return vertices;
     }
 
+    public float[] get_enables() {
+        return new float[] {
+            continent_noise.enable? 1 : 0,
+            general_noise.enable? 1 : 0,
+            mountains_noise.enable? 1 : 0,
+            underwater_mountains_noise.enable? 1 : 0,
+            flatness_noise.enable? 1 : 0
+        };
+    }
 
     public float[] get_continent_noise_settings() {
         return new float[] {

@@ -12,6 +12,7 @@ public class OceanSphere : MonoBehaviour {
     // settings
     [Range(20, 50000)]
     public int resolution = 50;
+    public Material ocean_material;
     public OceanShapeSettings shape_settings;
 
     void initialize() {
@@ -24,7 +25,7 @@ public class OceanSphere : MonoBehaviour {
         for (int i = 0; i < mesh_filter_count; i++) {
             GameObject meshObj = new GameObject("Mesh");
             meshObj.transform.parent = transform;
-            meshObj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
+            meshObj.AddComponent<MeshRenderer>().sharedMaterial = ocean_material;
 
             mesh_filters[i] = meshObj.AddComponent<MeshFilter>();
             mesh_filters[i].sharedMesh = new Mesh();

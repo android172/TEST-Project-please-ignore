@@ -1,5 +1,6 @@
 ﻿// includes
 #include "./Includes/Noise/FractalNoise.cginc"
+#include "./Includes/SmoothMinMax.cginc"
 
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
@@ -10,6 +11,7 @@ uint num_of_vertices;
 float radius;
 
 // settings
+float4 enabled[2];
 float4 noise_settings_continent_shape[3];
 float4 noise_settings_both[3];
 float4 noise_settings_mountains[3];
@@ -30,26 +32,28 @@ void CSMain(uint id : SV_DispatchThreadID) {
 
 	float height;
 	// continent / ocean mask //
-	height = clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base);
-	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - ocean_depth) / (continent_base - ocean_depth);;
-	float ocean_mask = (height == ocean_depth) ? 1 : 0;
+	height = clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base) * enabled[0].x;
+	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - ocean_depth) / (continent_base - ocean_depth);
+	float ocean_mask = (continent_base - ocean_depth == 0) ? 0 : 1 - (height - ocean_depth) / (continent_base - ocean_depth);
 
-	// both //
 	// flatness //
-	float flatness = (1.0 + fractal_noise(vertices[id], noise_settings_flatness)) / 2;
-	flatness = (flatness > flatness_ratio) ? 1 : 0.1;
-	// bumps
-	height += fractal_noise(vertices[id], noise_settings_both) * flatness;
+	float flatness = (1.0 + fractal_noise(vertices[id], noise_settings_flatness)) / 2 * enabled[1].x;
+	flatness = (flatness <= flatness_ratio) ? 1 : flatness;
 
 	// continent //
 	// mountains
-	height += ridge_noise(vertices[id], noise_settings_mountains) * continent_mask * flatness;
+	float ridge_1 = ridge_noise(vertices[id], noise_settings_mountains) * continent_mask * flatness * 0.1 * enabled[0].z;
 
 	// ocean //
 	// underwater mountains
-	height += ridge_noise_2(vertices[id], noise_settings_ocean_mountains) * ocean_mask;
+	float ridge_2 = ridge_noise_2(vertices[id], noise_settings_ocean_mountains) * ocean_mask * flatness * 0.1 * enabled[0].w;
 
-	height /= 3;
+	height += smax(ridge_1, ridge_2, 8.0);
+
+	// both //
+	// bumps
+	height += fractal_noise(vertices[id], noise_settings_both) * flatness * enabled[0].y;
+
 	vertices[id] *= radius * (1 + 0.5 * height);
 }
 

@@ -5,6 +5,7 @@ using UnityEngine;
 public class ShapeSettings : ScriptableObject {
     [System.Serializable]
     public struct NoiseSettings {
+        public bool enable;
         [Range(1, 10)]
         public int number_of_layers;
         public float amplitude_fading;

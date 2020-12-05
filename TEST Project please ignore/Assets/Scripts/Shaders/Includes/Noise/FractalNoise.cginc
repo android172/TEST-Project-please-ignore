@@ -1,4 +1,5 @@
 #include "./SimplexNoise.cginc"
+#include "./ValueNoise.cginc"
 
 // fractal noise
 float fractal_noise(float3 point_v, int number_of_layers, float amplitude_fading, float base_frequency, float frequency_multiplier, float strength, float base_height, float3 seed) {
@@ -54,4 +55,30 @@ float ridge_noise_2(float3 pos, float4 settings[3]) {
     float sample3 = ridge_noise(pos - axisB * offsetDst, settings);
     float sample4 = ridge_noise(pos + axisB * offsetDst, settings);
     return (sample0 + sample1 + sample2 + sample3 + sample4) / 5.0;
+}
+
+const float3x3 m3  = float3x3( 0.00,  0.80,  0.60,
+                      -0.80,  0.36, -0.48,
+                      -0.60, -0.48,  0.64 );
+
+// returns 3D fbm and its 3 derivatives
+float fractal_noise_dir(float3 point_v, int number_of_layers, float amplitude_fading, float base_frequency, float frequency_multiplier, float strength, float3 seed) {
+    float amplitude = 1;
+	float frequency = base_frequency;
+    float base_noise_acc = 0.0;
+    float3 derivatives_acc = float3(0.0, 0.0, 0.0);
+
+    for( int i=0; i < number_of_layers; i++ ) {
+        float4 noise_val = noised(point_v * frequency + seed);
+        derivatives_acc += noise_val.yzw; // accumulate derivatives
+        base_noise_acc  += amplitude * noise_val.x / (1.0 + dot(derivatives_acc, derivatives_acc));   // accumulate values
+        amplitude *= amplitude_fading;
+		frequency *= frequency_multiplier;
+        point_v = mul(m3, point_v);
+    }
+    return base_noise_acc * strength;
+}
+
+float fractal_noise_d(float3 point_v, float4 settings[3]) {
+	return fractal_noise_dir(point_v, (int)settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, float3(settings[1].z, settings[1].w, settings[2].x));
 }

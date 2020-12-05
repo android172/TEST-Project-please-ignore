@@ -11,11 +11,13 @@ public class Planet : MonoBehaviour {
     SphereMeshGenerator generator = new SphereMeshGenerator();
 
     // settings
-    [Range(20, 500000)]
+    [Range(20, 1000000)]
     public int resolution = 50;
+    public Material planet_material;
     public RockyPlanetShapeSettings shape_settings;
     public ColorSettings color_settings;
 
+    [ContextMenu("initialize")]
     void initialize() {
         initialize_mesh_filters();
         initialized = true;
@@ -26,7 +28,7 @@ public class Planet : MonoBehaviour {
         for (int i = 0; i < mesh_filter_count; i++) {
             GameObject meshObj = new GameObject("Mesh");
             meshObj.transform.parent = transform;
-            meshObj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
+            meshObj.AddComponent<MeshRenderer>().sharedMaterial = planet_material;
 
             mesh_filters[i] = meshObj.AddComponent<MeshFilter>();
             mesh_filters[i].sharedMesh = new Mesh();
