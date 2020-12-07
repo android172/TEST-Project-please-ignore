@@ -12,9 +12,12 @@ namespace Universe
 
         private void FixedUpdate()
         {
+
+            CelestialBody[] otherBodies = celestialBodies.ToArray();
+
             foreach (CelestialBody body in celestialBodies)
             {
-                Vector3 newVelocity = body.initialVelocity;
+                /*Vector3 newVelocity = body.initialVelocity;
                 foreach (CelestialBody otherBody in celestialBodies)
                 {
                     float sqrDst = (otherBody.transform.position - body.transform.position).sqrMagnitude;
@@ -26,7 +29,16 @@ namespace Universe
                     newVelocity += velocity;
                 }
 
-                body.transform.position = body.transform.position + newVelocity * Time.fixedDeltaTime;
+                body.transform.position = body.transform.position + newVelocity * Time.fixedDeltaTime;*/
+                body.UpdateVelocity(otherBodies, Time.fixedDeltaTime);
+            }
+        }
+
+        private void Update()
+        {
+            foreach (CelestialBody body in celestialBodies)
+            {
+                body.UpdatePosition(Time.deltaTime);
             }
         }
 
