@@ -7,8 +7,16 @@ public class OceanShapeSettings : ShapeSettings {
     // TODO: add custom settings
 
     public override Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
-        Vector3[] vertices = (Vector3[]) vertices_in.Clone();
+        Vector3[] vertices = (Vector3[])vertices_in.Clone();
+
+        // // calculate each points height
+        float[] heights = new float[number_of_points];
         int kernel_id = noise_compute_shader.FindKernel("WaveCompute");
+
+        // send heights
+        ComputeBuffer heights_buf = new ComputeBuffer(number_of_points, sizeof(float));
+        heights_buf.SetData(heights);
+        noise_compute_shader.SetBuffer(kernel_id, "heights", heights_buf);
 
         // send vertices
         ComputeBuffer vertices_buf = new ComputeBuffer(number_of_points, 3 * sizeof(float));
@@ -23,11 +31,14 @@ public class OceanShapeSettings : ShapeSettings {
         noise_compute_shader.Dispatch(kernel_id, 1024, 1, 1);
 
         // return data
-        vertices_buf.GetData(vertices);
+        heights_buf.GetData(heights);
 
         // release buffers
+        heights_buf.Release();
         vertices_buf.Release();
 
+        for (int i = 0; i < number_of_points; i++)
+            vertices[i] *= heights[i];
         return vertices;
     }
 }

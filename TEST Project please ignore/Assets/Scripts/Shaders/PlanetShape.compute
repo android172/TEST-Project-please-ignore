@@ -6,7 +6,8 @@
 #pragma kernel CSMain
 
 // Height information
-RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float> heights;
+StructuredBuffer<float3> vertices;
 uint num_of_vertices;
 float radius;
 
@@ -54,6 +55,6 @@ void CSMain(uint id : SV_DispatchThreadID) {
 	// bumps
 	height += fractal_noise(vertices[id], noise_settings_both) * flatness * enabled[0].y;
 
-	vertices[id] *= radius * (1 + 0.5 * height);
+	heights[id] = radius * (1 + 0.5 * height);
 }
 
