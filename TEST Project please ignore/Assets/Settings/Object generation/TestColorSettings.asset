@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd8cb04ec6991004f8f88b9936b3121f, type: 3}
   m_Name: TestColorSettings
   m_EditorClassIdentifier: 
-  planet_color: {r: 0.67517185, g: 0.754717, b: 0.65859735, a: 1}
+  planet_color: {r: 0.71124893, g: 0.7529412, b: 0.65882355, a: 1}

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
-    bool initialized = false;
     [SerializeField, HideInInspector]
     MeshFilter[] mesh_filters;
     int mesh_filter_count;
@@ -14,15 +13,17 @@ public class Planet : MonoBehaviour {
     [Range(20, 1000000)]
     public int resolution = 50;
     public Material planet_material;
-    public RockyPlanetShapeSettings shape_settings;
+    public ShapeSettings shape_settings;
     public ColorSettings color_settings;
 
     [ContextMenu("initialize")]
     void initialize() {
         initialize_mesh_filters();
-        initialized = true;
     }
     void initialize_mesh_filters() {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+            DestroyImmediate(transform.GetChild(i).gameObject);
+            
         mesh_filters = new MeshFilter[mesh_filter_count];
         Mesh[] mesh_list = new Mesh[mesh_filter_count];
         for (int i = 0; i < mesh_filter_count; i++) {
@@ -39,7 +40,7 @@ public class Planet : MonoBehaviour {
 
     [ContextMenu("generate")]
     public void generate_planet() {
-        if (!initialized) initialize();
+        initialize();
         generate_mesh();
         generate_color();
     }
@@ -47,8 +48,6 @@ public class Planet : MonoBehaviour {
         int group_count = generator.get_no_of_groups(resolution);
         if (group_count != mesh_filter_count) {
             mesh_filter_count = group_count;
-            for (int i = transform.childCount - 1; i >= 0; i--)
-                DestroyImmediate(transform.GetChild(i).gameObject);
             initialize_mesh_filters();
         }
         if (shape_settings == null) {

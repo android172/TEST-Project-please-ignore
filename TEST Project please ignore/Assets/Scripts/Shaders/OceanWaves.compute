@@ -2,7 +2,8 @@
 #pragma kernel WaveCompute
 
 // Height information
-RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float> heights;
+StructuredBuffer<float3> vertices;
 uint num_of_vertices;
 float radius;
 
@@ -12,5 +13,5 @@ void WaveCompute (uint id : SV_DispatchThreadID) {
 
     // TODO: wave compute
 
-    vertices[id] *= radius;
+    heights[id] = radius;
 }
