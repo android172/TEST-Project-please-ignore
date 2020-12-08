@@ -66,10 +66,10 @@ public class SphereMeshGenerator {
         }
 
         // deform sphere according to the given settings
-        Vector3[] vertices = settings.apply_noise(this.vertices, number_of_points);
+        Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
 
         // normals calculation
-        Vector3[] normals = calculate_normals(vertices, indices);
+        Vector3[] normals = calculate_normals(vertices_def, indices);
 
         // distribute vertices and normals
         Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
@@ -77,11 +77,11 @@ public class SphereMeshGenerator {
             int k = starting_duplicate[i];
             sub_mesh_n[i] = new Vector3[sub_mesh_v[i].Length];
             for (int j = 0; j < sub_mesh_v[i].Length; j++) {
-                sub_mesh_v[i][j] = vertices[k];
+                sub_mesh_v[i][j] = vertices_def[k];
                 sub_mesh_n[i][j] = normals[k++];
             }
         }
-
+        
         // construct mesh
         for (int i = 0; i < target_mesh_list.Length; i++) {
             target_mesh_list[i].Clear();
@@ -442,7 +442,7 @@ public class SphereMeshGenerator {
             sub_mesh_i = new int[1][];
             sub_mesh_i[0] = indices;
             sub_mesh_v = new Vector3[1][];
-            sub_mesh_v[0] = vertices;
+            sub_mesh_v[0] = new Vector3[number_of_points];
             starting_duplicate = new int[] { 0 };
             
             return;

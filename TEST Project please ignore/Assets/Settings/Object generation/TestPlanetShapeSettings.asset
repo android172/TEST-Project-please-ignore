@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestPlanetShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
-  radius: 1
+  radius: 2
   continent_ratio: 0.479
   ocean_depth: 0.087
   flatness: 0.813
@@ -36,7 +36,7 @@ MonoBehaviour:
     base_height: 0.42
     seed: {x: 4.59, y: 0, z: 0}
   general_noise:
-    enable: 1
+    enable: 0
     number_of_layers: 9
     amplitude_fading: 0.5
     base_frequency: 3
@@ -56,7 +56,7 @@ MonoBehaviour:
   power: 2.12
   gain: 0.723
   underwater_mountains_noise:
-    enable: 1
+    enable: 0
     number_of_layers: 4
     amplitude_fading: 0.46
     base_frequency: 3.29
