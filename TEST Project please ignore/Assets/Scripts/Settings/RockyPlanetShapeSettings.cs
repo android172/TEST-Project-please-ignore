@@ -18,16 +18,11 @@ public class RockyPlanetShapeSettings : ShapeSettings {
     // general noise
     public NoiseSettings general_noise;
     // mountains
-    public NoiseSettings mountains_noise;
-    public float power;
-    [Range(0,1)]
-    public float gain;
+    public MNoiseSettings mountains_noise;
     // underwater mountains
-    public NoiseSettings underwater_mountains_noise;
-    public float u_power;
-    [Range(0, 1)]
-    public float u_gain;
-    public float offset;
+    public UMNoiseSettings underwater_mountains_noise;
+    // craters
+    public CraterNoiseSettings crater_noise;
 
 
     public override Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
@@ -52,12 +47,13 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         noise_compute_shader.SetFloat("radius", radius);
 
         // send noise settings
-        noise_compute_shader.SetFloats("enabled", get_enables());
+        noise_compute_shader.SetInts("enabled", get_enables());
         noise_compute_shader.SetFloats("noise_settings_continent_shape", get_continent_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_flatness", get_flatness_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_both", get_general_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_mountains", get_mountains_noise_settings());
         noise_compute_shader.SetFloats("noise_settings_ocean_mountains", get_underwater_mountains_noise_settings());
+        noise_compute_shader.SetFloats("noise_settings_crater", get_crater_noise_settings());
 
         // set continent height
         float continent_base = (1f - continent_ratio * 2f) * continent_noise.strength + continent_noise.base_height;
@@ -66,7 +62,8 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         float ocean_depth = continent_base - (continent_base + continent_noise.strength - continent_noise.base_height) * this.ocean_depth;
         noise_compute_shader.SetFloat("ocean_depth", ocean_depth);
         // set flatness
-        noise_compute_shader.SetFloat("flatness_ratio", flatness);
+        float flatness_ratio = (flatness * 2f - 1f) * flatness_noise.strength + flatness_noise.base_height;
+        noise_compute_shader.SetFloat("flatness_ratio", flatness_ratio);
 
         // run
         noise_compute_shader.Dispatch(kernel_id, 1024, 1, 1);
@@ -83,17 +80,18 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         return vertices;
     }
 
-    public float[] get_enables() {
-        return new float[] {
+    int[] get_enables() {
+        return new int[] {
             continent_noise.enable? 1 : 0,
             general_noise.enable? 1 : 0,
             mountains_noise.enable? 1 : 0,
             underwater_mountains_noise.enable? 1 : 0,
-            flatness_noise.enable? 1 : 0
+            flatness_noise.enable? 1 : 0,
+            crater_noise.enable? 1 : 0
         };
     }
 
-    public float[] get_continent_noise_settings() {
+    float[] get_continent_noise_settings() {
         return new float[] {
             continent_noise.number_of_layers,
             continent_noise.amplitude_fading,
@@ -106,7 +104,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
             continent_noise.seed.z
         };
     }
-    public float[] get_flatness_noise_settings() {
+    float[] get_flatness_noise_settings() {
         return new float[] {
             flatness_noise.number_of_layers,
             flatness_noise.amplitude_fading,
@@ -119,7 +117,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
             flatness_noise.seed.z
         };
     }
-    public float[] get_general_noise_settings() {
+    float[] get_general_noise_settings() {
         return new float[] {
             general_noise.number_of_layers,
             general_noise.amplitude_fading,
@@ -132,8 +130,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
             general_noise.seed.z
         };
     }
-    public float[] get_mountains_noise_settings()
-    {
+    float[] get_mountains_noise_settings() {
         return new float[] {
             mountains_noise.number_of_layers,
             mountains_noise.amplitude_fading,
@@ -144,11 +141,11 @@ public class RockyPlanetShapeSettings : ShapeSettings {
             mountains_noise.seed.x,
             mountains_noise.seed.y,
             mountains_noise.seed.z,
-            power,
-            gain
+            mountains_noise.power,
+            mountains_noise.gain
         };
     }
-    public float[] get_underwater_mountains_noise_settings() {
+    float[] get_underwater_mountains_noise_settings() {
         return new float[] {
             underwater_mountains_noise.number_of_layers,
             underwater_mountains_noise.amplitude_fading,
@@ -159,9 +156,30 @@ public class RockyPlanetShapeSettings : ShapeSettings {
             underwater_mountains_noise.seed.x,
             underwater_mountains_noise.seed.y,
             underwater_mountains_noise.seed.z,
-            u_power,
-            u_gain,
-            offset
+            underwater_mountains_noise.power,
+            underwater_mountains_noise.gain,
+            underwater_mountains_noise.offset
+        };
+    }
+
+    float[] get_crater_noise_settings() {
+        return new float[] {
+            crater_noise.number_of_layers,
+            crater_noise.depth,
+            crater_noise.amplitude_fading,
+            crater_noise.base_frequency,
+            crater_noise.frequency_multiplier,
+            crater_noise.radius,
+            crater_noise.slope,
+            crater_noise.central_elevation_height,
+            crater_noise.central_elevation_width,
+            crater_noise.outside_slope,
+            crater_noise.jitter,
+            crater_noise.strength,
+            crater_noise.base_height,
+            crater_noise.seed.x,
+            crater_noise.seed.y,
+            crater_noise.seed.z
         };
     }
 }

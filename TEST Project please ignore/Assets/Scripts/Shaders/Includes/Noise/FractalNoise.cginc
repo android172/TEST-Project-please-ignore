@@ -1,5 +1,6 @@
 #include "./SimplexNoise.cginc"
 #include "./ValueNoise.cginc"
+#include "./CellularNoise.cginc"
 
 // fractal noise
 float fractal_noise(float3 point_v, int number_of_layers, float amplitude_fading, float base_frequency, float frequency_multiplier, float strength, float base_height, float3 seed) {
@@ -41,7 +42,8 @@ float ridge_noise(float3 point_v, int number_of_layers, float amplitude_fading, 
 	return noise_sum * strength + base_height;
 }
 float ridge_noise(float3 point_v, float4 settings[3]) {
-    return ridge_noise(point_v, (int)settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, settings[1].y, float3(settings[1].z, settings[1].w, settings[2].x), settings[2].y, settings[2].z);
+    return ridge_noise(point_v, (int)settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, settings[1].y, float3(settings[1].z, settings[1].w, settings[2].x), 
+                       settings[2].y, settings[2].z);
 }
 float ridge_noise_2(float3 pos, float4 settings[3]) {
     float3 sphereNormal = normalize(pos);
@@ -57,11 +59,10 @@ float ridge_noise_2(float3 pos, float4 settings[3]) {
     return (sample0 + sample1 + sample2 + sample3 + sample4) / 5.0;
 }
 
+// returns 3D fbm and its 3 derivatives
 const float3x3 m3  = float3x3( 0.00,  0.80,  0.60,
                       -0.80,  0.36, -0.48,
                       -0.60, -0.48,  0.64 );
-
-// returns 3D fbm and its 3 derivatives
 float fractal_noise_dir(float3 point_v, int number_of_layers, float amplitude_fading, float base_frequency, float frequency_multiplier, float strength, float3 seed) {
     float amplitude = 1;
 	float frequency = base_frequency;
@@ -78,7 +79,35 @@ float fractal_noise_dir(float3 point_v, int number_of_layers, float amplitude_fa
     }
     return base_noise_acc * strength;
 }
-
 float fractal_noise_d(float3 point_v, float4 settings[3]) {
 	return fractal_noise_dir(point_v, (int)settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, float3(settings[1].z, settings[1].w, settings[2].x));
+}
+
+// crater biuse
+float crater_noise(float3 point_v, int number_of_layers, float base_depth, float depth_fading, float base_frequency, float frequency_multiplier, float radius,
+                   int crater_slope, float ce_height, float ce_width, float outside_slope, float jitter_amount, float strength, float base_height, float3 seed) {
+	float frequency = base_frequency;
+	float depth = base_depth;
+    float3 offset = seed + snoise(point_v * 5) * jitter_amount * 0.01;
+	float noise_sum = 0.0;
+	for(int i = 0; i < number_of_layers; i++) {
+		float x = radius * cellular(point_v * frequency + offset).x;
+		// general crater shape
+        float crater_hole = pow(abs(x), crater_slope) * depth;
+        // mountain in the middle
+		float central_elevation = (- x*x*x*x / (ce_width * 0.01) + 0.1) * ce_height * depth;
+        // elevation outside of the crater
+        float ol = (1.0 + outside_slope*0.1) - x;
+		float outside_land = max(depth + ol*ol*ol, depth);
+        // total
+		noise_sum += min(max(central_elevation, crater_hole), outside_land) - depth;
+		frequency *= frequency_multiplier;
+		depth *= depth_fading;
+	}
+	return noise_sum * strength + base_height;
+}
+
+float crater_noise(float3 point_v, float4 settings[4]) {
+    return crater_noise(point_v, (int) settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, settings[1].y, (int) settings[1].z, settings[1].w,
+                 settings[2].x, settings[2].y, settings[2].z, settings[2].w, settings[3].x, settings[3].yzw);
 }
