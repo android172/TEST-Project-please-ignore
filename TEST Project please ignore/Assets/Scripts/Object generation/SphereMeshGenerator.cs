@@ -68,8 +68,12 @@ public class SphereMeshGenerator {
         // deform sphere according to the given settings
         Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
 
+        sw.Reset();
+        sw.Start();
         // normals calculation
         Vector3[] normals = calculate_normals(vertices_def, indices);
+        sw.Stop();
+        Debug.Log("Normals calculation : " + sw.Elapsed);
 
         // distribute vertices and normals
         Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
@@ -539,6 +543,9 @@ public class SphereMeshGenerator {
     }
     // for normals
     static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
+        sw.Start();
         Vector3[] normals = new Vector3[vertices.Length];
         for (int i = 0; i < indices.Length / 3; i++) {
             // // calculating normal of current triangle
@@ -546,22 +553,22 @@ public class SphereMeshGenerator {
             int index_1 = indices[3 * i];
             int index_2 = indices[3 * i + 1];
             int index_3 = indices[3 * i + 2];
-            // relevant vertices
-            Vector3 v_1 = vertices[index_1];
-            Vector3 v_2 = vertices[index_2];
-            Vector3 v_3 = vertices[index_3];
             // normal calculation using cross product
-            Vector3 vec12 = v_2 - v_1;
-            Vector3 vec13 = v_3 - v_1;
-            Vector3 triangle_normal = Vector3.Cross(vec12, vec13);
+            Vector3 triangle_normal = Vector3.Cross(vertices[index_2] - vertices[index_1], vertices[index_3] - vertices[index_1]);
             // // adding triangle normal as one of the factors of individual vertex normals
             normals[index_1] += triangle_normal;
             normals[index_2] += triangle_normal;
             normals[index_3] += triangle_normal;
         }
+        sw.Stop();
+        Debug.Log("Normals part 1 : " + sw.Elapsed);
+        sw.Reset();
+        sw.Start();
         // normalizeing normal vectors
         for (int i = 0; i < normals.Length; i++)
             normals[i].Normalize();
+        sw.Stop();
+        Debug.Log("Normals part 2 : " + sw.Elapsed);
 
         return  normals;
     }
