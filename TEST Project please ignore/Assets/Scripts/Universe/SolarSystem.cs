@@ -42,7 +42,7 @@ namespace Universe
             }
         }
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             foreach(CelestialBody body in celestialBodies)
             {

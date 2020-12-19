@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: TestPlanetShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
-  radius: 1
-  continent_ratio: 0.468
-  ocean_depth: 0.077
+  radius: 5
+  continent_ratio: 0.476
+  ocean_depth: 0.127
   flatness: 1
   continent_noise:
     enable: 1
