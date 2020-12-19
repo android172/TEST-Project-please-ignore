@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class OceanSphere : MonoBehaviour {
-    bool initialized = false;
     [SerializeField, HideInInspector]
     MeshFilter[] mesh_filters;
     int mesh_filter_count;
-    public SphereMeshGenerator generator = new SphereMeshGenerator();
+    [SerializeField, HideInInspector]
+    SphereMeshGenerator generator = new SphereMeshGenerator();
 
     // settings
     [Range(20, 50000)]
@@ -15,11 +15,14 @@ public class OceanSphere : MonoBehaviour {
     public Material ocean_material;
     public OceanShapeSettings shape_settings;
 
+    [ContextMenu("initialize")]
     void initialize() {
         initialize_mesh_filters();
-        initialized = true;
     }
     void initialize_mesh_filters() {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+            DestroyImmediate(transform.GetChild(i).gameObject);
+
         mesh_filters = new MeshFilter[mesh_filter_count];
         Mesh[] mesh_list = new Mesh[mesh_filter_count];
         for (int i = 0; i < mesh_filter_count; i++) {
@@ -36,7 +39,7 @@ public class OceanSphere : MonoBehaviour {
 
     [ContextMenu("generate")]
     public void generate_ocean() {
-        if (!initialized) initialize();
+        initialize();
         generate_mesh();
     }
 

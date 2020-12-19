@@ -1,3 +1,6 @@
+#ifndef __UTIL__
+#define __UTIL__
+
 float3 mod289(float3 x) {
 	return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
@@ -26,3 +29,5 @@ float4 taylorInvSqrt(float4 r)
 float3 fade(float3 t) {
   return t*t*t*(t*(t*6.0-15.0)+10.0);
 }
+
+#endif

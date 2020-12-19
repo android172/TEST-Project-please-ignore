@@ -6,54 +6,60 @@
 #pragma kernel CSMain
 
 // Height information
-RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float> heights;
+StructuredBuffer<float3> vertices;
 uint num_of_vertices;
 float radius;
 
 // settings
-float4 enabled[2];
+int4 enabled[2];
 float4 noise_settings_continent_shape[3];
 float4 noise_settings_both[3];
 float4 noise_settings_mountains[3];
 float4 noise_settings_ocean_mountains[3];
 float4 noise_settings_flatness[3];
+float4 noise_settings_crater[4];
 
 float continent_base;
 float ocean_depth;
 float flatness_ratio;
 
-// functions used
-float snoise(float3 v);
-
-
 [numthreads(1024, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID) {
 	if (id >= num_of_vertices) { return; }
 
+	// enables ==for readability==
+	int continents_enabled =	  enabled[0].x;
+	int general_noise_enabled =	  enabled[0].y;
+	int mountains_enabled =		  enabled[0].z;
+	int ocean_mountains_enabled = enabled[0].w;
+	int flatness_enabled =        enabled[1].x;
+	int craters_enabled = 		  enabled[1].y;
+
 	float height;
 	// continent / ocean mask //
-	height = clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base) * enabled[0].x;
+	height = (clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base) - continent_base) * continents_enabled;
 	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - ocean_depth) / (continent_base - ocean_depth);
 	float ocean_mask = (continent_base - ocean_depth == 0) ? 0 : 1 - (height - ocean_depth) / (continent_base - ocean_depth);
 
 	// flatness //
-	float flatness = (1.0 + fractal_noise(vertices[id], noise_settings_flatness)) / 2 * enabled[1].x;
-	flatness = (flatness <= flatness_ratio) ? 1 : flatness;
+	float flatness = (clamp(fractal_noise(vertices[id], noise_settings_flatness), flatness_ratio,  flatness_ratio + 0.1) - flatness_ratio) / 0.1 * flatness_enabled;
 
 	// continent //
 	// mountains
-	float ridge_1 = ridge_noise(vertices[id], noise_settings_mountains) * continent_mask * flatness * 0.1 * enabled[0].z;
+	float ridge_1 = ridge_noise(vertices[id], noise_settings_mountains) * continent_mask * flatness * 0.1 * mountains_enabled;
+	// crater
+	height += crater_noise(vertices[id], noise_settings_crater) * continent_mask * craters_enabled;
 
 	// ocean //
 	// underwater mountains
-	float ridge_2 = ridge_noise_2(vertices[id], noise_settings_ocean_mountains) * ocean_mask * flatness * 0.1 * enabled[0].w;
+	float ridge_2 = ridge_noise_2(vertices[id], noise_settings_ocean_mountains) * ocean_mask * flatness * 0.1 * ocean_mountains_enabled;
 
 	height += smax(ridge_1, ridge_2, 8.0);
 
 	// both //
 	// bumps
-	height += fractal_noise(vertices[id], noise_settings_both) * flatness * enabled[0].y;
-
-	vertices[id] *= radius * (1 + 0.5 * height);
+	height += fractal_noise(vertices[id], noise_settings_both) * general_noise_enabled;
+	
+	heights[id] = radius * (1 + 0.5 * height);
 }
-

@@ -35,6 +35,7 @@ public class SphereMeshGenerator {
     // sub meshes
     Vector3[][] sub_mesh_v;
     int[][] sub_mesh_i;
+    int[] starting_duplicate;
 
     // methods
     // constructor
@@ -51,10 +52,6 @@ public class SphereMeshGenerator {
     public int get_no_of_groups(int no_of_points) {
         return (no_of_points - 1) / vertices_per_mesh + 1;
     }
-
-    /// DEBUG
-    Vector3[] plane;
-    ///
     
     System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
     public void construct_mesh(int number_of_points, ShapeSettings settings) {
@@ -68,35 +65,40 @@ public class SphereMeshGenerator {
             Debug.Log("Subdeivision : " + sw.Elapsed);
         }
 
-        sw.Reset();
-        sw.Start();
         // deform sphere according to the given settings
-        Vector3[][] sub_mesh_v_deformed = new Vector3[sub_mesh_v.Length][];
-        for (int i = 0; i < sub_mesh_v.Length; i++)
-            sub_mesh_v_deformed[i] = settings.apply_noise(sub_mesh_v[i], sub_mesh_v[i].Length);
-
-        sw.Stop();
-        Debug.Log("Deformation : " + sw.Elapsed);
+        Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
 
         sw.Reset();
         sw.Start();
+        // normals calculation
+        Vector3[] normals = calculate_normals(vertices_def, indices);
+        sw.Stop();
+        Debug.Log("Normals calculation : " + sw.Elapsed);
 
+        // distribute vertices and normals
+        Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
+        for (int i = 0; i < sub_mesh_v.Length; i++) {
+            int k = starting_duplicate[i];
+            sub_mesh_n[i] = new Vector3[sub_mesh_v[i].Length];
+            for (int j = 0; j < sub_mesh_v[i].Length; j++) {
+                sub_mesh_v[i][j] = vertices_def[k];
+                sub_mesh_n[i][j] = normals[k++];
+            }
+        }
+        
         // construct mesh
         for (int i = 0; i < target_mesh_list.Length; i++) {
             target_mesh_list[i].Clear();
-            target_mesh_list[i].vertices = sub_mesh_v_deformed[i];
+            target_mesh_list[i].vertices = sub_mesh_v[i];
             target_mesh_list[i].triangles = sub_mesh_i[i];
-            target_mesh_list[i].RecalculateNormals();
-            target_mesh_list[i].SetUVs(0, sub_mesh_v_deformed[i]);
+            target_mesh_list[i].SetNormals(sub_mesh_n[i]);
+            target_mesh_list[i].SetUVs(0, sub_mesh_v[i]);
         }
-
-        sw.Stop();
-        Debug.Log("Mesh construction : " + sw.Elapsed);
     }
 
     // construct unit sphere with equally spaced points
     public void construct_unit_sphere(int number_of_points) {
-        vertices = new Vector3[number_of_points]; plane = new Vector3[number_of_points];
+        vertices = new Vector3[number_of_points];
         indices = new int[number_of_points];
         Point_s[] stereographic = new Point_s[number_of_points]; // stereographic projection of vertices onto XY plane with z = 0
 
@@ -118,7 +120,6 @@ public class SphereMeshGenerator {
 
             // project to plane
             stereographic[number_of_points - i - 1] = new Point_s(i, (float)(x / (1.0 - z)), (float)(y / (1.0 - z)));
-            plane[i] = new Vector3((float)(x / (1.0 - z)), (float)(y / (1.0 - z)), 0f);
 
             // iterate
             z -= dz;
@@ -388,8 +389,13 @@ public class SphereMeshGenerator {
                 return 1;
             });
 
+            // create triangles
             for (int k = 0; k < relevant_connections.Count - 1; k++) {
-                triangles.Add(make_a_triangle(points[i], points[i].connections[relevant_connections[k].value], points[i].connections[relevant_connections[k + 1].value]));
+                int[] triangle = new int[] {points[i].id, points[i].connections[relevant_connections[k].value].id, points[i].connections[relevant_connections[k + 1].value].id};
+                // determine orientation
+                if (!clock_wise_oriented(points[i], points[i].connections[relevant_connections[k].value], points[i].connections[relevant_connections[k + 1].value]))
+                    triangle = new int[] { triangle[0], triangle[2], triangle[1]};
+                triangles.Add(triangle);
             }
         }
 
@@ -420,17 +426,17 @@ public class SphereMeshGenerator {
         }
 
         // // all triangles are formed, we should list them
-        int[] indicies = new int[3 * triangles.Count];
+        int[] indices = new int[3 * triangles.Count];
         for (int i = 0; i < triangles.Count; i++) {
-            indicies[3 * i]     = triangles[i][0];
-            indicies[3 * i + 1] = triangles[i][1];
-            indicies[3 * i + 2] = triangles[i][2];
+            indices[3 * i]     = triangles[i][0];
+            indices[3 * i + 1] = triangles[i][1];
+            indices[3 * i + 2] = triangles[i][2];
         }
 
         sw.Stop();
         Debug.Log("Triangulation - other : " + sw.Elapsed);
 
-        return indicies;
+        return indices;
     }
     
     // mesh construction
@@ -440,8 +446,9 @@ public class SphereMeshGenerator {
             sub_mesh_i = new int[1][];
             sub_mesh_i[0] = indices;
             sub_mesh_v = new Vector3[1][];
-            sub_mesh_v[0] = vertices;
-
+            sub_mesh_v[0] = new Vector3[number_of_points];
+            starting_duplicate = new int[] { 0 };
+            
             return;
         }
         
@@ -451,7 +458,7 @@ public class SphereMeshGenerator {
         sub_mesh_v = new Vector3[number_of_groups][];
 
         // extra vertices starting index
-        int[] starting_duplicate = new int[number_of_groups];
+        starting_duplicate = new int[number_of_groups];
         // indices contained in given group
         List<int>[] group_indices = new List<int>[number_of_groups];
         
@@ -506,12 +513,6 @@ public class SphereMeshGenerator {
                 vertices_in_group = number_of_points - starting_duplicate[i];
             sub_mesh_v[i] = new Vector3[vertices_in_group];
         }
-        // distribute vertices
-        for (int i = 0; i < number_of_groups; i++) {
-            for (int j = 0; j < sub_mesh_v[i].Length; j++) {
-                sub_mesh_v[i][j] = vertices[starting_duplicate[i] + j];
-            }
-        }
     }
 
     //////////////////////
@@ -540,10 +541,35 @@ public class SphereMeshGenerator {
         if (Mathf.Abs(Vector2.Dot(v1, v2)) < EM) return true;
         return false;
     }
-    // for triangles
-    static int[] make_a_triangle(Point_s p1, Point_s p2, Point_s p3) {
-        // determine orientation
-        if (clock_wise_oriented(p1, p2, p3)) return new int[] { p1.id, p2.id, p3.id };
-        else return new int[] { p1.id, p3.id, p2.id };
+    // for normals
+    static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
+        sw.Start();
+        Vector3[] normals = new Vector3[vertices.Length];
+        for (int i = 0; i < indices.Length / 3; i++) {
+            // // calculating normal of current triangle
+            // indexes of relevant vertices
+            int index_1 = indices[3 * i];
+            int index_2 = indices[3 * i + 1];
+            int index_3 = indices[3 * i + 2];
+            // normal calculation using cross product
+            Vector3 triangle_normal = Vector3.Cross(vertices[index_2] - vertices[index_1], vertices[index_3] - vertices[index_1]);
+            // // adding triangle normal as one of the factors of individual vertex normals
+            normals[index_1] += triangle_normal;
+            normals[index_2] += triangle_normal;
+            normals[index_3] += triangle_normal;
+        }
+        sw.Stop();
+        Debug.Log("Normals part 1 : " + sw.Elapsed);
+        sw.Reset();
+        sw.Start();
+        // normalizeing normal vectors
+        for (int i = 0; i < normals.Length; i++)
+            normals[i].Normalize();
+        sw.Stop();
+        Debug.Log("Normals part 2 : " + sw.Elapsed);
+
+        return  normals;
     }
 }
