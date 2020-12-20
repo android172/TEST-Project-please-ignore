@@ -30,7 +30,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
 
         // // calculate each points height
         float[] heights = new float[number_of_points];
-        int kernel_id = noise_compute_shader.FindKernel("CSMain");
+        int kernel_id = noise_compute_shader.FindKernel("PlanetShapeCompute");
 
         // send heights
         ComputeBuffer heights_buf = new ComputeBuffer(number_of_points, sizeof(float));

@@ -31,6 +31,8 @@ public class SphereMeshGenerator {
     private Vector3[] vertices;
     private int[] indices;
     private int number_of_points_already_generated;
+    // cache genereted by other ShapeMeshGenerator
+    private static List<(int number_of_points, int[] indices, Vector3[] vertices)> cached_spheres = new List<(int, int[], Vector3[])>();
 
     // sub meshes
     Vector3[][] sub_mesh_v;
@@ -53,27 +55,23 @@ public class SphereMeshGenerator {
         return (no_of_points - 1) / vertices_per_mesh + 1;
     }
     
-    System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+    /// System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
     public void construct_mesh(int number_of_points, ShapeSettings settings) {
         // construct unit sphere
         if (number_of_points != number_of_points_already_generated) {
-            construct_unit_sphere(number_of_points);
-            sw.Reset();
-            sw.Start();
-            subdivide_meshes(number_of_points);
-            sw.Stop();
-            Debug.Log("Subdeivision : " + sw.Elapsed);
+            // returns tr=ue if sphere with a given number of points is found
+            if (find_sphere_in_cache(number_of_points) == false) {
+                construct_unit_sphere(number_of_points);
+                subdivide_meshes(number_of_points);
+                cache_sphere();
+            }
         }
 
         // deform sphere according to the given settings
         Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
 
-        sw.Reset();
-        sw.Start();
         // normals calculation
         Vector3[] normals = calculate_normals(vertices_def, indices);
-        sw.Stop();
-        Debug.Log("Normals calculation : " + sw.Elapsed);
 
         // distribute vertices and normals
         Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
@@ -96,13 +94,29 @@ public class SphereMeshGenerator {
         }
     }
 
+    // find in cache
+    private bool find_sphere_in_cache(int number_of_points) {
+        foreach (var sphere in cached_spheres)
+            if (sphere.number_of_points == number_of_points) {
+                number_of_points_already_generated = sphere.number_of_points;
+                vertices = sphere.vertices;
+                indices = sphere.indices;
+                subdivide_meshes(number_of_points);
+                return true;
+            }
+        return false;
+    }
+
+    // put sphere in cache
+    private void cache_sphere() {
+        cached_spheres.Add((number_of_points_already_generated, indices, vertices));
+    }
+
     // construct unit sphere with equally spaced points
-    public void construct_unit_sphere(int number_of_points) {
+    private void construct_unit_sphere(int number_of_points) {
         vertices = new Vector3[number_of_points];
         indices = new int[number_of_points];
         Point_s[] stereographic = new Point_s[number_of_points]; // stereographic projection of vertices onto XY plane with z = 0
-
-        sw.Start();
 
         // Generate sphere points
         double s = 3.6 / System.Math.Sqrt(number_of_points);
@@ -127,32 +141,18 @@ public class SphereMeshGenerator {
             longitude += +s / r;
         }
 
-        sw.Stop();
-        Debug.Log("Unit sphere points : " + sw.Elapsed);
-
         // triangulate given points
-
-        sw.Reset();
-        sw.Start();
-
         indices = triangulate(stereographic, number_of_points);
-
-        sw.Stop();
-        Debug.Log("Triangulation : " + sw.Elapsed);
 
         // done
         number_of_points_already_generated = number_of_points;
     }
 
     // points triangulation
-    static int[] triangulate(Point_s[] points, int number_of_points) {
+    private static int[] triangulate(Point_s[] points, int number_of_points) {
         ////////////////////////////
         // Delaunay triangulation //
         ////////////////////////////
-
-        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-        sw.Start();
-
         // // initialize first triangle
         // which points to work on
         int p1 = 0;
@@ -340,12 +340,6 @@ public class SphereMeshGenerator {
             last_point = c_point;
         }
 
-        sw.Stop();
-        Debug.Log("Triangulation - reconnection : " + sw.Elapsed);
-
-        sw.Reset();
-        sw.Start();
-
         // // list all the triangles
         List<int []> triangles = new List<int []>(); // list of triangles
 
@@ -399,12 +393,6 @@ public class SphereMeshGenerator {
             }
         }
 
-        sw.Stop();
-        Debug.Log("Triangulation - triangle listings : " + sw.Elapsed);
-
-        sw.Reset();
-        sw.Start();
-
         // // calculating remaining open points
         List<Point_s> hole = new List<Point_s>();
 
@@ -432,15 +420,12 @@ public class SphereMeshGenerator {
             indices[3 * i + 1] = triangles[i][1];
             indices[3 * i + 2] = triangles[i][2];
         }
-
-        sw.Stop();
-        Debug.Log("Triangulation - other : " + sw.Elapsed);
-
+        
         return indices;
     }
     
     // mesh construction
-    void subdivide_meshes(int number_of_points) {
+    private void subdivide_meshes(int number_of_points) {
         // if there is no need for subdevision don't subdivide
         if (number_of_points <= vertices_per_mesh) {
             sub_mesh_i = new int[1][];

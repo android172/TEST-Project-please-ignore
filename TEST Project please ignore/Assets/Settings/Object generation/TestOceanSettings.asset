@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: TestOceanSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 165213a439a9db04eb3cc25b42c2c8be, type: 3}
-  radius: 100
+  radius: 2

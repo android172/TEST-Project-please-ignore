@@ -3,7 +3,7 @@
 #include "./Includes/SmoothMinMax.cginc"
 
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel PlanetShapeCompute
 
 // Height information
 RWStructuredBuffer<float> heights;
@@ -25,7 +25,7 @@ float ocean_depth;
 float flatness_ratio;
 
 [numthreads(1024, 1, 1)]
-void CSMain(uint id : SV_DispatchThreadID) {
+void PlanetShapeCompute(uint id : SV_DispatchThreadID) {
 	if (id >= num_of_vertices) { return; }
 
 	// enables ==for readability==
@@ -59,7 +59,7 @@ void CSMain(uint id : SV_DispatchThreadID) {
 
 	// both //
 	// bumps
-	height += fractal_noise(vertices[id], noise_settings_both) * general_noise_enabled;
+	height += abs(fractal_noise(vertices[id], noise_settings_both)) * general_noise_enabled;
 	
 	heights[id] = radius * (1 + 0.5 * height);
 }
