@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using System.IO;
+
 public class SphereMeshGenerator {
 
     internal class Point_s {
@@ -55,14 +57,17 @@ public class SphereMeshGenerator {
         return (no_of_points - 1) / vertices_per_mesh + 1;
     }
     
-    /// System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+    System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
     public void construct_mesh(int number_of_points, ShapeSettings settings) {
         // construct unit sphere
         if (number_of_points != number_of_points_already_generated) {
             // returns tr=ue if sphere with a given number of points is found
-            if (find_sphere_in_cache(number_of_points) == false) {
+                sw.Start();
                 construct_unit_sphere(number_of_points);
+                sw.Stop();
+                Debug.Log("Mesh Construction: " + sw.Elapsed);
                 subdivide_meshes(number_of_points);
+            if (find_sphere_in_cache(number_of_points) == false) {
                 cache_sphere();
             }
         }
@@ -142,7 +147,26 @@ public class SphereMeshGenerator {
         }
 
         // triangulate given points
-        indices = triangulate(stereographic, number_of_points);
+        string path = Application.persistentDataPath + "/" + number_of_points.ToString() + ".tri";
+
+        if (File.Exists(path)) {
+            using (var reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read))) {
+                int indices_length = reader.ReadInt32();
+                indices = new int[indices_length];
+                for (int i = 0; i < indices_length; i++)
+                    indices[i] = reader.ReadInt32();
+            }
+        }
+        else {
+            indices = triangulate(stereographic, number_of_points);
+            Debug.Log("Not Found");
+
+            using (var writer = new BinaryWriter(new FileStream(path, FileMode.Create, FileAccess.Write))) {
+                writer.Write(indices.Length);
+                for (int i = 0; i < indices.Length; i++)
+                    writer.Write(indices[i]);
+            }
+        }
 
         // done
         number_of_points_already_generated = number_of_points;
@@ -528,9 +552,6 @@ public class SphereMeshGenerator {
     }
     // for normals
     static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
-        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-
-        sw.Start();
         Vector3[] normals = new Vector3[vertices.Length];
         for (int i = 0; i < indices.Length / 3; i++) {
             // // calculating normal of current triangle
@@ -545,15 +566,9 @@ public class SphereMeshGenerator {
             normals[index_2] += triangle_normal;
             normals[index_3] += triangle_normal;
         }
-        sw.Stop();
-        Debug.Log("Normals part 1 : " + sw.Elapsed);
-        sw.Reset();
-        sw.Start();
         // normalizeing normal vectors
         for (int i = 0; i < normals.Length; i++)
             normals[i].Normalize();
-        sw.Stop();
-        Debug.Log("Normals part 2 : " + sw.Elapsed);
 
         return  normals;
     }
