@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ed6bf182d06cc54fa13fc62c7b3fb61, type: 3}
+  m_Name: DefaultAsteroidShapeSettings
+  m_EditorClassIdentifier: 
+  noise_compute_shader: {fileID: 7200000, guid: 55bfe0b7044f8cc40b79c4b3b74e7d34, type: 3}
+  radius: 1
+  shape_noise:
+    enable: 1
+    number_of_layers: 5
+    amplitude_fading: 0.3
+    base_frequency: 0.6
+    frequency_multiplier: 2
+    strength: 3.51
+    base_height: 0
+    seed: {x: -60.1, y: 169.26, z: -2.11}
+  general_noise:
+    enable: 1
+    number_of_layers: 9
+    amplitude_fading: 0.5
+    base_frequency: 1
+    frequency_multiplier: 3.11
+    strength: 0.64
+    base_height: 0
+    seed: {x: -100.6, y: -52.52, z: -56.88}
+  crater_noise:
+    enable: 1
+    number_of_layers: 9
+    amplitude_fading: 0.5
+    base_frequency: 2
+    frequency_multiplier: 1.5
+    strength: 0.72
+    base_height: 0
+    seed: {x: -31.44, y: 12.16, z: -60.89}
+    depth: 0.257
+    radius: 3
+    slope: 12
+    central_elevation_height: 0
+    central_elevation_width: 0
+    outside_slope: 3
+    jitter: 2

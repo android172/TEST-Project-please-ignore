@@ -17,6 +17,31 @@ public class ShapeSettings : ScriptableObject {
         public float strength = 1f;
         public float base_height;
         public Vector3 seed;
+
+        public NoiseSettings(NoiseSettings settings) {
+            enable = settings.enable;
+            number_of_layers = settings.number_of_layers;
+            amplitude_fading = settings.amplitude_fading;
+            base_frequency = settings.base_frequency;
+            frequency_multiplier = settings.frequency_multiplier;
+            strength = settings.strength;
+            base_height = settings.base_height;
+            seed.x = settings.seed.x;
+            seed.y = settings.seed.y;
+            seed.z = settings.seed.z;
+        }
+
+        private static System.Random r = new System.Random();
+        public void randomize_seed() {
+            seed.x = rand_to_float(r.NextDouble(), r.Next(15));
+            seed.y = rand_to_float(r.NextDouble(), r.Next(15));
+            seed.z = rand_to_float(r.NextDouble(), r.Next(15));
+        }
+        private float rand_to_float(double mantissa, int exponent) {
+            double mn = 2.0 * mantissa - 1.0;
+            double ex = System.Math.Pow(2.0, exponent);
+            return (float) (mn * ex);
+        }
     }
 
     [System.Serializable]
@@ -24,11 +49,20 @@ public class ShapeSettings : ScriptableObject {
         public float power = 1f;
         [Range(0,1)]
         public float gain = 1f;
+
+        public MNoiseSettings(MNoiseSettings settings) : base(settings) {
+            power = settings.power;
+            gain = settings.gain;
+        }
     }
 
     [System.Serializable]
     public class UMNoiseSettings : MNoiseSettings {
         public float offset;
+
+        public UMNoiseSettings(UMNoiseSettings settings) : base(settings) {
+            offset = settings.offset;
+        }
     }
 
     [System.Serializable]
@@ -46,15 +80,28 @@ public class ShapeSettings : ScriptableObject {
         [Min(0f)]
         public float outside_slope;
         public float jitter;
+
+        public CraterNoiseSettings(CraterNoiseSettings settings) : base(settings) {
+            depth = settings.depth;
+            radius = settings.radius;
+            slope = settings.slope;
+            central_elevation_height = settings.central_elevation_height;
+            central_elevation_width = settings.central_elevation_width;
+            outside_slope = settings.outside_slope;
+            jitter = settings.jitter;
+        }
     }
 
     public ComputeShader noise_compute_shader;
 
     [Min(0.5f)]
-    public float radius;
+    public float radius = 1f;
 
-    // public float radius = 1f;
-
+    public virtual void set_settings(ShapeSettings settings) {
+        noise_compute_shader = settings.noise_compute_shader;
+        radius = settings.radius;
+    }
+    public virtual void randomize_seed() {}
     public virtual Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
         return vertices_in;
     }

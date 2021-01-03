@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2154ddada131e6349aa76baed2ffab80, type: 3}
-  m_Name: TestOceanSettings
+  m_Name: DefaultOceanShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 165213a439a9db04eb3cc25b42c2c8be, type: 3}
-  radius: 6
+  radius: 10.1

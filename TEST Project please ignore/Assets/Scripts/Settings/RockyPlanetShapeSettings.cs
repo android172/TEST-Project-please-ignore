@@ -25,6 +25,32 @@ public class RockyPlanetShapeSettings : ShapeSettings {
     public CraterNoiseSettings crater_noise;
 
 
+    // Constructors
+    public override void set_settings(ShapeSettings settings_in) {
+        if (!(settings_in is RockyPlanetShapeSettings)) throw new UnityException("Error in :: ShapeSettings :: set_settings :: cannot set settings to the settings of wrong type.");
+        RockyPlanetShapeSettings settings = (RockyPlanetShapeSettings) settings_in;
+        base.set_settings(settings);
+        continent_ratio = settings.continent_ratio;
+        ocean_depth = settings.ocean_depth;
+        flatness = settings.flatness;
+        continent_noise = new NoiseSettings(settings.continent_noise);
+        flatness_noise = new NoiseSettings(settings.flatness_noise);
+        general_noise = new NoiseSettings(settings.general_noise);
+        mountains_noise = new MNoiseSettings(settings.mountains_noise);
+        underwater_mountains_noise = new UMNoiseSettings(settings.underwater_mountains_noise);
+        crater_noise = new CraterNoiseSettings(settings.crater_noise);
+    }
+
+    public override void randomize_seed() {
+        base.randomize_seed();
+        continent_noise.randomize_seed();
+        flatness_noise.randomize_seed();
+        general_noise.randomize_seed();
+        mountains_noise.randomize_seed();
+        underwater_mountains_noise.randomize_seed();
+        crater_noise.randomize_seed();
+    }
+
     public override Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
         Vector3[] vertices = (Vector3[])vertices_in.Clone();
 
@@ -60,6 +86,8 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         noise_compute_shader.SetFloat("continent_base", continent_base);
         // set ocean depth
         float ocean_depth = continent_base - (continent_base + continent_noise.strength - continent_noise.base_height) * this.ocean_depth;
+        if (continent_ratio == 1f)
+            ocean_depth = continent_base - 1f;
         noise_compute_shader.SetFloat("ocean_depth", ocean_depth);
         // set flatness
         float flatness_ratio = (flatness * 2f - 1f) * flatness_noise.strength + flatness_noise.base_height;

@@ -55,7 +55,7 @@ public class OceanSphere : MonoBehaviour {
             Debug.Log("Shape settings not set!");
             return;
         }
-        generator.construct_mesh(resolution, shape_settings);
+        generator.construct_mesh(resolution, shape_settings, false);
     }
 
     public void OnShapeSettingsUpdated() {

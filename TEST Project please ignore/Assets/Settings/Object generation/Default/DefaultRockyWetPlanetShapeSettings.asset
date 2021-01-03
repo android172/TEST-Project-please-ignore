@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7530ff6b89c400b4ab3d49e3e3574022, type: 3}
-  m_Name: TestPlanetShapeSettings
+  m_Name: DefaultRockyWetPlanetShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
-  radius: 6
-  continent_ratio: 0.487
-  ocean_depth: 0.153
-  flatness: 0.446
+  radius: 10
+  continent_ratio: 0.46
+  ocean_depth: 0.096
+  flatness: 0.46
   continent_noise:
     enable: 1
     number_of_layers: 3
@@ -25,7 +25,7 @@ MonoBehaviour:
     frequency_multiplier: 3
     strength: 1.19
     base_height: 0
-    seed: {x: 7821, y: -223, z: 8.07}
+    seed: {x: 7817.8, y: -223, z: 8.07}
   flatness_noise:
     enable: 1
     number_of_layers: 3
