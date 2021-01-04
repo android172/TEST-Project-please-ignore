@@ -58,7 +58,7 @@ public class SphereMeshGenerator {
     }
     
     System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-    public void construct_mesh(int number_of_points, ShapeSettings settings) {
+    public void construct_mesh(int number_of_points, ShapeSettings settings, bool calc_normals) {
         // construct unit sphere
         if (number_of_points != number_of_points_already_generated) {
             // returns tr=ue if sphere with a given number of points is found
@@ -76,7 +76,11 @@ public class SphereMeshGenerator {
         Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
 
         // normals calculation
-        Vector3[] normals = calculate_normals(vertices_def, indices);
+        Vector3[] normals;
+        if (calc_normals)
+            normals = calculate_normals(vertices_def, indices);
+        else
+            normals = new Vector3[number_of_points];
 
         // distribute vertices and normals
         Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
@@ -94,7 +98,8 @@ public class SphereMeshGenerator {
             target_mesh_list[i].Clear();
             target_mesh_list[i].vertices = sub_mesh_v[i];
             target_mesh_list[i].triangles = sub_mesh_i[i];
-            target_mesh_list[i].SetNormals(sub_mesh_n[i]);
+            if (calc_normals) target_mesh_list[i].SetNormals(sub_mesh_n[i]);
+            else target_mesh_list[i].RecalculateNormals();
             target_mesh_list[i].SetUVs(0, sub_mesh_v[i]);
         }
     }

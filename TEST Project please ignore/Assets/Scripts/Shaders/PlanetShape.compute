@@ -39,11 +39,11 @@ void PlanetShapeCompute(uint id : SV_DispatchThreadID) {
 	float height;
 	// continent / ocean mask //
 	height = (clamp(fractal_noise(vertices[id], noise_settings_continent_shape), ocean_depth, continent_base) - continent_base) * continents_enabled;
-	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - ocean_depth) / (continent_base - ocean_depth);
-	float ocean_mask = (continent_base - ocean_depth == 0) ? 0 : 1 - (height - ocean_depth) / (continent_base - ocean_depth);
+	float continent_mask = (continent_base - ocean_depth == 0) ? 0 : (height - (ocean_depth - continent_base)) / (continent_base - ocean_depth);
+	float ocean_mask = (continent_base - ocean_depth == 0) ? 0 : 1 - (height - (ocean_depth - continent_base)) / (continent_base - ocean_depth);
 
 	// flatness //
-	float flatness = (clamp(fractal_noise(vertices[id], noise_settings_flatness), flatness_ratio,  flatness_ratio + 0.1) - flatness_ratio) / 0.1 * flatness_enabled;
+	float flatness = (flatness_enabled)? (clamp(fractal_noise(vertices[id], noise_settings_flatness), flatness_ratio,  flatness_ratio + 0.1) - flatness_ratio) / 0.1 : 1 ;
 
 	// continent //
 	// mountains

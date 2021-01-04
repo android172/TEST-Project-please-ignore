@@ -1,0 +1,38 @@
+﻿// includes
+#include "./Includes/Noise/FractalNoise.cginc"
+#include "./Includes/SmoothMinMax.cginc"
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel AsteroidShapeCompute
+
+// Height information
+RWStructuredBuffer<float> heights;
+StructuredBuffer<float3> vertices;
+uint num_of_vertices;
+float radius;
+
+// settings
+int4 enabled[1];
+float4 noise_settings_shape[3];
+float4 noise_settings_general[3];
+float4 noise_settings_crater[4];
+
+[numthreads(1024, 1, 1)]
+void AsteroidShapeCompute(uint id : SV_DispatchThreadID) {
+	if (id >= num_of_vertices) { return; }
+
+	// enables ==for readability==
+	int shape_enabled =     	  enabled[0].x;
+	int general_noise_enabled =	  enabled[0].y;
+	int craters_enabled = 		  enabled[0].z;
+
+	float height = 1.0;
+    // shape
+    height += fractal_noise(vertices[id], noise_settings_shape) * shape_enabled;
+	// crater
+	height += crater_noise(vertices[id], noise_settings_crater) * craters_enabled;
+	// general//
+	height += fractal_noise(vertices[id], noise_settings_general) * general_noise_enabled;
+	
+	heights[id] = radius * (1 + 0.5 * height);
+}

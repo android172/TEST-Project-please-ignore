@@ -12,6 +12,7 @@ public class Planet : MonoBehaviour {
     // settings
     [Range(20, 1000000)]
     public int resolution = 50;
+    public bool slow_normals_calculation = true;
     public Material planet_material;
     public ShapeSettings shape_settings;
     public ColorSettings color_settings;
@@ -54,7 +55,7 @@ public class Planet : MonoBehaviour {
             Debug.Log("Shape settings not set!");
             return;
         }
-        generator.construct_mesh(resolution, shape_settings);
+        generator.construct_mesh(resolution, shape_settings, slow_normals_calculation);
     }
     private void generate_color() {
         if (color_settings == null) {

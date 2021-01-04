@@ -6,6 +6,17 @@ using UnityEngine;
 public class OceanShapeSettings : ShapeSettings {
     // TODO: add custom settings
 
+    public override void set_settings(ShapeSettings settings_in) {
+        if (!(settings_in is OceanShapeSettings)) throw new UnityException("Error in :: ShapeSettings :: set_settings :: cannot set settings to the settings of wrong type.");
+        OceanShapeSettings settings = (OceanShapeSettings) settings_in;
+        base.set_settings(settings);
+        // TODO: same
+    }
+
+    public override void randomize_seed() {
+        base.randomize_seed();
+    }
+
     public override Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
         Vector3[] vertices = (Vector3[])vertices_in.Clone();
 
