@@ -117,6 +117,7 @@ MonoBehaviour:
   - {fileID: 3912485203739470195}
   - {fileID: -1658960478407648048}
   - {fileID: 5321722785694334585}
+  - {fileID: 9048661877987383749}
 --- !u!114 &3912485203739470195
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -156,9 +157,9 @@ MonoBehaviour:
   m_AdvancedMode: 0
   enabled:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   colorMode:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
   color:
     m_OverrideState: 0
@@ -173,7 +174,7 @@ MonoBehaviour:
     showAlpha: 0
     showEyeDropper: 1
   maxFogDistance:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 5000
     min: 0
   mipFogMaxMip:
@@ -190,27 +191,27 @@ MonoBehaviour:
     m_Value: 1000
     min: 0
   baseHeight:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
   maximumHeight:
-    m_OverrideState: 0
-    m_Value: 50
+    m_OverrideState: 1
+    m_Value: 3.402823e+30
   albedo:
-    m_OverrideState: 0
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    m_OverrideState: 1
+    m_Value: {r: 0, g: 0.16338648, b: 0.8301887, a: 1}
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
   meanFreePath:
     m_OverrideState: 1
-    m_Value: 250
+    m_Value: 5
     min: 1
   enableVolumetricFog:
     m_OverrideState: 1
     m_Value: 1
   anisotropy:
     m_OverrideState: 1
-    m_Value: 0.6
+    m_Value: 0
     min: -1
     max: 1
   globalLightProbeDimmer:
@@ -230,3 +231,40 @@ MonoBehaviour:
   filter:
     m_OverrideState: 0
     m_Value: 0
+--- !u!114 &9048661877987383749
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c1bfcd0f0fa7b8468f281d6bbbaf320, type: 3}
+  m_Name: LensDistortion
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0
+    min: -1
+    max: 1
+  xMultiplier:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 0
+    max: 1
+  yMultiplier:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 0
+    max: 1
+  center:
+    m_OverrideState: 1
+    m_Value: {x: 0.5, y: 0.5}
+  scale:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 0.01
+    max: 5

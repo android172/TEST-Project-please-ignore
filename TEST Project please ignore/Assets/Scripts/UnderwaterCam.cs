@@ -1,38 +1,81 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 public class UnderwaterCam : MonoBehaviour
 {
-    public float waterHeight;
+    public Volume volume;
+    public float distortionFrequency;
 
     private bool isUnderwater;
     private Color normalCol;
     private Color uwCol;
+    private LensDistortion lensDistortion;
+    private Fog fog;
+    private float time;
+    
 
     // Start is called before the first frame update
     void Start()
     {
-        normalCol = new Color (0.5f, 0.5f, 0.5f, 0.5f);
-        uwCol = new Color (0.22f, 0.65f, 0.77f, 0.5f);
+        time = Time.deltaTime;
+        
+        if(volume == null)
+        {
+            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>() ;
+        foreach(GameObject go in allObjects)
+            if(go.name == "SceneSettings")
+                volume = go.GetComponent<Volume>();
+        }
+        
+        volume.profile.TryGet<LensDistortion>(out lensDistortion);
+        volume.profile.TryGet<Fog>(out fog);
+
+        lensDistortion.intensity.value = 0.0f;
+        fog.enabled.value = false;
+        fog.albedo = new ColorParameter(new Color(0.0f, 108.0f/255.0f, 1.0f));
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        if((transform.position.y < waterHeight) != isUnderwater)
+        isUnderwater = CheckUnderwater();
+        //Debug.Log(isUnderwater);
+        if(isUnderwater)
         {
-            isUnderwater = transform.position.y < waterHeight;
-            if(isUnderwater)
-            {
-                RenderSettings.fogColor = normalCol;
-                RenderSettings.fogDensity = 0.01f;
-            }
-            if(!isUnderwater)
-            {
-                RenderSettings.fogColor = uwCol;
-                RenderSettings.fogDensity = 0.1f;
-            }
+            lensDistortion.intensity.value = 0.7f;
+            time += Time.deltaTime;
+            lensDistortion.xMultiplier.value = Mathf.Sin(time/2 * distortionFrequency)/1.5f;
+            lensDistortion.yMultiplier.value = Mathf.Sin(time/3 * distortionFrequency)/1.5f;
+
+            fog.enabled.value = true;
         }
+        else
+        {
+            lensDistortion.intensity.value = 0.0f;
+            fog.enabled.value = false;
+        }
+    }
+
+    bool CheckUnderwater()
+    {
+        
+        //GameObject[] water = GameObject.FindGameObjectsWithTag("Water");
+
+        foreach(GameObject w in GameObject.FindGameObjectsWithTag("Water"))
+        {
+            float radius = w.GetComponent<OceanSphere>().shape_settings.radius;
+            float dx = transform.position.x - w.transform.position.x;
+            float dy = transform.position.y - w.transform.position.y;
+            float dz = transform.position.z - w.transform.position.z;
+            float temp = Mathf.Sqrt(dx*dx + dy*dy + dz*dz);
+            if(temp < radius)
+                return true;
+        }
+
+        return false;
     }
 }

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: TestPlanetShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
-  radius: 6
-  continent_ratio: 0.487
-  ocean_depth: 0.153
-  flatness: 0.446
+  radius: 100
+  continent_ratio: 0.49
+  ocean_depth: 0.12
+  flatness: 0.43
   continent_noise:
     enable: 1
     number_of_layers: 3
@@ -58,15 +58,15 @@ MonoBehaviour:
   underwater_mountains_noise:
     enable: 1
     number_of_layers: 4
-    amplitude_fading: 0.46
-    base_frequency: 3.29
-    frequency_multiplier: 3.16
-    strength: 0.25
-    base_height: -0.5
-    seed: {x: -13.51, y: -35.96, z: 115.14}
-    power: 2.69
+    amplitude_fading: 1.87
+    base_frequency: 5.35
+    frequency_multiplier: 3.79
+    strength: 0.21
+    base_height: -0.31
+    seed: {x: -13.29, y: -35.96, z: 115.14}
+    power: 4.4
     gain: 0.835
-    offset: 0.74
+    offset: 2.1
   crater_noise:
     enable: 1
     number_of_layers: 1
