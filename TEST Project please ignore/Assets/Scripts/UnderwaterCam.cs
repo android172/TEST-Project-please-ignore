@@ -65,7 +65,7 @@ public class UnderwaterCam : MonoBehaviour
         
         //GameObject[] water = GameObject.FindGameObjectsWithTag("Water");
 
-        foreach(GameObject w in GameObject.FindGameObjectsWithTag("Water"))
+        foreach(GameObject w in GameObject.FindGameObjectsWithTag("Ocean"))
         {
             float radius = w.GetComponent<OceanSphere>().shape_settings.radius;
             float dx = transform.position.x - w.transform.position.x;
