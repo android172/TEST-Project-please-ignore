@@ -4,7 +4,7 @@ using UnityEngine;
 
 using System.IO;
 
-public class SphereMeshGenerator {
+public static class SphereMeshGenerator {
 
     internal class Point_s {
         internal int id;
@@ -25,70 +25,64 @@ public class SphereMeshGenerator {
         }
     }
 
+    private class SphereMesh {
+        public int[] indices;
+        public Vector3[] vertices;
+        
+        public SphereMesh() {
+            vertices = null;
+            indices = null;
+        }
+        public SphereMesh(int[] indices, Vector3[] vertices) {
+            this.indices = indices;
+            this.vertices = vertices;
+        }
+    }
+
     // params
-    private Mesh[] target_mesh_list;
+    // const
     private const int vertices_per_mesh = 50000;
-
-    // already generated
-    private Vector3[] vertices;
-    private int[] indices;
-    private int number_of_points_already_generated;
     // cache genereted by other ShapeMeshGenerator
-    private static List<(int number_of_points, int[] indices, Vector3[] vertices)> cached_spheres = new List<(int, int[], Vector3[])>();
-
-    // sub meshes
-    Vector3[][] sub_mesh_v;
-    int[][] sub_mesh_i;
-    int[] starting_duplicate;
+    private static List<SphereMesh> cached_spheres = new List<SphereMesh>();
 
     // methods
-    // constructor
-    public SphereMeshGenerator() {
-        vertices = null;
-        indices = null;
-        number_of_points_already_generated = -1;
-    }
-    // set target mesh list
-    public void set_target_mesh(Mesh[] mesh_list) {
-        target_mesh_list = mesh_list;
-    }
     // get number of groups for given number of points
-    public int get_no_of_groups(int no_of_points) {
+    public static int get_no_of_groups(int no_of_points) {
         return (no_of_points - 1) / vertices_per_mesh + 1;
     }
-    
-    System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-    public void construct_mesh(int number_of_points, ShapeSettings settings, bool calc_normals) {
+    // construct mesh
+    // System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+    public static void construct_mesh(Mesh[] target_mesh_list, int number_of_points, ShapeSettings settings, bool calc_normals) {
         // construct unit sphere
-        if (number_of_points != number_of_points_already_generated) {
-            // returns tr=ue if sphere with a given number of points is found
-                sw.Start();
-                construct_unit_sphere(number_of_points);
-                sw.Stop();
-                Debug.Log("Mesh Construction: " + sw.Elapsed);
-                subdivide_meshes(number_of_points);
-            if (find_sphere_in_cache(number_of_points) == false) {
-                cache_sphere();
-            }
+        SphereMesh sphere;
+        // if sphere with a given number of points is found sets vertices and indices and returns true
+        // otherwise returns false
+        if (find_sphere_in_cache(number_of_points, out sphere) == false) {
+            sphere = construct_unit_sphere(number_of_points);
+            cache_sphere(sphere);
         }
+        // subdivide sphere
+        SphereMesh[] sphere_parts;
+        int[] starting_duplicate = null;
+        sphere_parts = subdivide_meshes(sphere, ref starting_duplicate);
 
         // deform sphere according to the given settings
-        Vector3[] vertices_def = settings.apply_noise(this.vertices, number_of_points);
+        Vector3[] vertices_def = settings.apply_noise(sphere.vertices, number_of_points);
 
         // normals calculation
         Vector3[] normals;
         if (calc_normals)
-            normals = calculate_normals(vertices_def, indices);
+            normals = calculate_normals(vertices_def, sphere.indices);
         else
             normals = new Vector3[number_of_points];
 
         // distribute vertices and normals
-        Vector3[][] sub_mesh_n = new Vector3[sub_mesh_v.Length][];
-        for (int i = 0; i < sub_mesh_v.Length; i++) {
+        Vector3[][] sub_mesh_n = new Vector3[sphere_parts.Length][];
+        for (int i = 0; i < sphere_parts.Length; i++) {
             int k = starting_duplicate[i];
-            sub_mesh_n[i] = new Vector3[sub_mesh_v[i].Length];
-            for (int j = 0; j < sub_mesh_v[i].Length; j++) {
-                sub_mesh_v[i][j] = vertices_def[k];
+            sub_mesh_n[i] = new Vector3[sphere_parts[i].vertices.Length];
+            for (int j = 0; j < sphere_parts[i].vertices.Length; j++) {
+                sphere_parts[i].vertices[j] = vertices_def[k];
                 sub_mesh_n[i][j] = normals[k++];
             }
         }
@@ -96,37 +90,35 @@ public class SphereMeshGenerator {
         // construct mesh
         for (int i = 0; i < target_mesh_list.Length; i++) {
             target_mesh_list[i].Clear();
-            target_mesh_list[i].vertices = sub_mesh_v[i];
-            target_mesh_list[i].triangles = sub_mesh_i[i];
+            target_mesh_list[i].vertices = sphere_parts[i].vertices;
+            target_mesh_list[i].triangles = sphere_parts[i].indices;
             if (calc_normals) target_mesh_list[i].SetNormals(sub_mesh_n[i]);
             else target_mesh_list[i].RecalculateNormals();
-            target_mesh_list[i].SetUVs(0, sub_mesh_v[i]);
+            target_mesh_list[i].SetUVs(0, sphere_parts[i].vertices);
         }
     }
 
     // find in cache
-    private bool find_sphere_in_cache(int number_of_points) {
+    private static bool find_sphere_in_cache(int number_of_points, out SphereMesh retSphere) {
+        retSphere = null;
         foreach (var sphere in cached_spheres)
-            if (sphere.number_of_points == number_of_points) {
-                number_of_points_already_generated = sphere.number_of_points;
-                vertices = sphere.vertices;
-                indices = sphere.indices;
-                subdivide_meshes(number_of_points);
+            if (sphere.vertices.Length == number_of_points) {
+                retSphere = sphere;
                 return true;
             }
         return false;
     }
 
     // put sphere in cache
-    private void cache_sphere() {
-        cached_spheres.Add((number_of_points_already_generated, indices, vertices));
+    private static void cache_sphere(SphereMesh sphere) {
+        cached_spheres.Add(sphere);
     }
 
     // construct unit sphere with equally spaced points
-    private void construct_unit_sphere(int number_of_points) {
-        vertices = new Vector3[number_of_points];
-        indices = new int[number_of_points];
+    private static SphereMesh construct_unit_sphere(int number_of_points) {
+        Vector3[] vertices = new Vector3[number_of_points];
         Point_s[] stereographic = new Point_s[number_of_points]; // stereographic projection of vertices onto XY plane with z = 0
+        int[] indices;
 
         // Generate sphere points
         double s = 3.6 / System.Math.Sqrt(number_of_points);
@@ -151,9 +143,10 @@ public class SphereMeshGenerator {
             longitude += +s / r;
         }
 
-        // triangulate given points
+        // get triangles for indices
         string path = Application.persistentDataPath + "/" + number_of_points.ToString() + ".tri";
 
+        // check if triangulation is already done
         if (File.Exists(path)) {
             using (var reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read))) {
                 int indices_length = reader.ReadInt32();
@@ -162,10 +155,9 @@ public class SphereMeshGenerator {
                     indices[i] = reader.ReadInt32();
             }
         }
+        // if not triangulate given points
         else {
-            indices = triangulate(stereographic, number_of_points);
-            Debug.Log("Not Found");
-
+            indices = triangulate(stereographic);
             using (var writer = new BinaryWriter(new FileStream(path, FileMode.Create, FileAccess.Write))) {
                 writer.Write(indices.Length);
                 for (int i = 0; i < indices.Length; i++)
@@ -173,12 +165,12 @@ public class SphereMeshGenerator {
             }
         }
 
-        // done
-        number_of_points_already_generated = number_of_points;
+        return new SphereMesh(indices, vertices);
     }
 
     // points triangulation
-    private static int[] triangulate(Point_s[] points, int number_of_points) {
+    private static int[] triangulate(Point_s[] points) {
+        int number_of_points = points.Length;
         ////////////////////////////
         // Delaunay triangulation //
         ////////////////////////////
@@ -454,22 +446,23 @@ public class SphereMeshGenerator {
     }
     
     // mesh construction
-    private void subdivide_meshes(int number_of_points) {
+    private static SphereMesh[] subdivide_meshes(SphereMesh sphere, ref int[] starting_duplicate) {
+        int number_of_points = sphere.vertices.Length;
+        SphereMesh[] sphere_parts = null;
         // if there is no need for subdevision don't subdivide
         if (number_of_points <= vertices_per_mesh) {
-            sub_mesh_i = new int[1][];
-            sub_mesh_i[0] = indices;
-            sub_mesh_v = new Vector3[1][];
-            sub_mesh_v[0] = new Vector3[number_of_points];
+            sphere_parts = new SphereMesh[1];
+            sphere_parts[0] = new SphereMesh();
+            sphere_parts[0].indices = sphere.indices;
+            sphere_parts[0].vertices = new Vector3[number_of_points];
             starting_duplicate = new int[] { 0 };
             
-            return;
+            return sphere_parts;
         }
         
         // number of meshes that will be generated
-        int number_of_groups = (number_of_points - 1) / vertices_per_mesh + 1;
-        sub_mesh_i = new int[number_of_groups][];
-        sub_mesh_v = new Vector3[number_of_groups][];
+        int number_of_groups = get_no_of_groups(number_of_points);
+        sphere_parts = new SphereMesh[number_of_groups];
 
         // extra vertices starting index
         starting_duplicate = new int[number_of_groups];
@@ -477,46 +470,47 @@ public class SphereMeshGenerator {
         List<int>[] group_indices = new List<int>[number_of_groups];
         
         for (int i = 0; i < number_of_groups; i++) {
+            sphere_parts[i] = new SphereMesh();
             starting_duplicate[i] = i * vertices_per_mesh;
             group_indices[i] = new List<int>();
         }
         
         // // sub mesh indices calculation
         // group indices
-        for (int i = 0; i < indices.Length; i += 3) {
-            int group = indices[i] / vertices_per_mesh;
+        for (int i = 0; i < sphere.indices.Length; i += 3) {
+            int group = sphere.indices[i] / vertices_per_mesh;
             // if all 3 indices are not in the same group
-            if (2 * group - indices[i + 1] / vertices_per_mesh - indices[i + 2] / vertices_per_mesh != 0) {
-                int group2 = indices[i + 1] / vertices_per_mesh;
-                int group3 = indices[i + 2] / vertices_per_mesh;
+            if (2 * group - sphere.indices[i + 1] / vertices_per_mesh - sphere.indices[i + 2] / vertices_per_mesh != 0) {
+                int group2 = sphere.indices[i + 1] / vertices_per_mesh;
+                int group3 = sphere.indices[i + 2] / vertices_per_mesh;
                 // group and duplicates calculation
                 // for second index
                 if (group2 > group) {
                     group = group2;
-                    if (indices[i] < starting_duplicate[group]) starting_duplicate[group] = indices[i];
+                    if (sphere.indices[i] < starting_duplicate[group]) starting_duplicate[group] = sphere.indices[i];
                 }
                 else if (group2 < group) {
-                    if (indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 1];
+                    if (sphere.indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = sphere.indices[i + 1];
                 }
                 // for third index
                 if (group3 > group) {
                     group = group3;
-                    if (indices[i] < starting_duplicate[group]) starting_duplicate[group] = indices[i];
-                    if (indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 1];
+                    if (sphere.indices[i] < starting_duplicate[group]) starting_duplicate[group] = sphere.indices[i];
+                    if (sphere.indices[i + 1] < starting_duplicate[group]) starting_duplicate[group] = sphere.indices[i + 1];
                 }
                 else if (group3 < group) {
-                    if (indices[i + 2] < starting_duplicate[group]) starting_duplicate[group] = indices[i + 2];
+                    if (sphere.indices[i + 2] < starting_duplicate[group]) starting_duplicate[group] = sphere.indices[i + 2];
                 }
             }
-            group_indices[group].Add(indices[i]);
-            group_indices[group].Add(indices[i + 1]);
-            group_indices[group].Add(indices[i + 2]);
+            group_indices[group].Add(sphere.indices[i]);
+            group_indices[group].Add(sphere.indices[i + 1]);
+            group_indices[group].Add(sphere.indices[i + 2]);
         }
         // distribute indices
         for (int i = 0; i < number_of_groups; i++) {
-            sub_mesh_i[i] = new int[group_indices[i].Count];
-            for (int j = 0; j < sub_mesh_i[i].Length; j++)
-                sub_mesh_i[i][j] = group_indices[i][j] - starting_duplicate[i];
+            sphere_parts[i].indices = new int[group_indices[i].Count];
+            for (int j = 0; j < group_indices[i].Count; j++)
+                sphere_parts[i].indices[j] = group_indices[i][j] - starting_duplicate[i];
         }
 
         // // sub mesh vertices calculation
@@ -525,18 +519,19 @@ public class SphereMeshGenerator {
             int vertices_in_group = (i + 1) * vertices_per_mesh - starting_duplicate[i];
             if ((i + 1) * vertices_per_mesh > number_of_points)
                 vertices_in_group = number_of_points - starting_duplicate[i];
-            sub_mesh_v[i] = new Vector3[vertices_in_group];
+            sphere_parts[i].vertices = new Vector3[vertices_in_group];
         }
+        return sphere_parts;
     }
 
     //////////////////////
     // Helper functions //
     //////////////////////
     // for vectors
-    static Vector2 vector_a_to_b(Point_s a, Point_s b) {
+    private static Vector2 vector_a_to_b(Point_s a, Point_s b) {
         return b.location - a.location;
     }
-    static Vector2 find_normal_on_line(Point_s a, Point_s b){
+    private static Vector2 find_normal_on_line(Point_s a, Point_s b){
         Vector2 ab = b.location - a.location;
         return new Vector2(-ab.y, ab.x);
     }
@@ -547,7 +542,7 @@ public class SphereMeshGenerator {
         if (Vector2.Dot(p1_p2_n, p1_p3) > 0) return false;
         return true;
     }
-    static bool are_colinear(Point_s p1, Point_s p2, Point_s p3) {
+    private static bool are_colinear(Point_s p1, Point_s p2, Point_s p3) {
         const float EM = 0.00000001f; // error margin
 
         Vector2 v1 = find_normal_on_line(p1, p2);
@@ -556,7 +551,7 @@ public class SphereMeshGenerator {
         return false;
     }
     // for normals
-    static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
+    private static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
         Vector3[] normals = new Vector3[vertices.Length];
         for (int i = 0; i < indices.Length / 3; i++) {
             // // calculating normal of current triangle
