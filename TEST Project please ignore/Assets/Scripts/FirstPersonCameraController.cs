@@ -8,12 +8,6 @@ public class FirstPersonCameraController : MonoBehaviour
     public float sensitivity = 50.0f;
     public float runMultiplier = 2;
 
-
-    private float xRotation = 0.0f;
-    private float minY = -80.0f;
-    private float maxY = 80.0f;
-    private Transform player;
-    private Camera mainCam;
     private bool running;
 
     class CameraState 
@@ -84,14 +78,8 @@ public class FirstPersonCameraController : MonoBehaviour
         // camera and player init
         current_state = new CameraState();
         target_state = new CameraState();
-        player = GameObject.FindWithTag("Player").transform;
-        mainCam = Camera.main;
-        current_state.position = player.position;
-        target_state.position = player.position;
-        current_state.position.y += 0.5f;
-        target_state.position.y += 0.5f;
-        //player.transform.forward = current_state.forwards_direction;
-        //player.transform.rotation = Quaternion.FromToRotation(player.transform.up, current_state.global_up) * player.transform.rotation;
+        current_state.position = transform.position;
+        target_state.position = transform.position;
 
         // unlock mouse
         Cursor.visible = false;
@@ -202,20 +190,5 @@ public class FirstPersonCameraController : MonoBehaviour
         current_state.lerp_towards(target_state, position_lerp_factor, rotation_lerp_factor);
 
         current_state.update_transform(transform);
-        /*
-        // camera/player rotation
-        float rotX = Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
-        float rotY = Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
-
-        xRotation -= rotY;
-        xRotation = MoveByAngle(xRotation, minY, maxY);
-        transform.localRotation = Quaternion.Euler(xRotation, 0.0f, 0.0f);
-        //player.transform.rotation = Quaternion.AngleAxis(rotX, current_state.global_up) * player.transform.rotation;
-        */
-    }
-
-    private static float MoveByAngle(float angle, float min, float max)
-    {
-        return Mathf.Clamp(angle, min, max);
     }
 }

@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class CharacterControler : MonoBehaviour
-{    public float gravity;
-
-    private bool isGrounded;
-    private float gravForce;
-    private float jumpSpeed = 0;
+{   
+    public Rigidbody rb;
 
     // Start is called before the first frame update
     void Start()
     {
-        gravForce = gravity;
-        isGrounded = true;
+
     }
 
     // Update is called once per frame
     void Update()
     {
+
+        transform.position = Camera.main.transform.position;
+        transform.up = Camera.main.transform.up;
+
+        /*
         if(isGrounded && Input.GetKey(KeyCode.Space))
         {
             jumpSpeed += 20.0f;
@@ -32,8 +33,9 @@ public class CharacterControler : MonoBehaviour
             gravForce = 1;
 
         jumpSpeed -= gravForce;
-
+        */
         
+        //rb.AddForce(0,0,5000.0f);
 
         
     }
