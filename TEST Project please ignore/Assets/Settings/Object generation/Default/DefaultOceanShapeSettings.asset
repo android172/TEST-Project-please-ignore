@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: DefaultOceanShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 165213a439a9db04eb3cc25b42c2c8be, type: 3}
-  radius: 1
+  radius: 50

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DefaultRockyWetPlanetShapeSettings
   m_EditorClassIdentifier: 
   noise_compute_shader: {fileID: 7200000, guid: 3f822a55540653744a573d3b16c7c80c, type: 3}
-  radius: 1
+  radius: 50
   continent_ratio: 0.49
   ocean_depth: 0.12
   flatness: 0.457
