@@ -4,9 +4,7 @@ using UnityEngine;
 
 public class OceanSphere : MonoBehaviour {
     [SerializeField, HideInInspector]
-    private MeshFilter[] mesh_filters;
-    private Mesh[] mesh_list;
-    private int mesh_filter_count;
+    private MeshFilter mesh_filter;
 
     // settings
     [Range(20, 50000)]
@@ -16,25 +14,20 @@ public class OceanSphere : MonoBehaviour {
 
     [ContextMenu("initialize")]
     void initialize() {
-        initialize_mesh_filters();
+        initialize_mesh_filter();
     }
-    void initialize_mesh_filters() {
+    void initialize_mesh_filter() {
         for (int i = transform.childCount - 1; i >= 0; i--)
             DestroyImmediate(transform.GetChild(i).gameObject);
+        
+        GameObject meshObj = new GameObject("Mesh");
+        meshObj.transform.parent = transform;
+        meshObj.transform.localPosition = Vector3.zero;
+        meshObj.AddComponent<MeshRenderer>().sharedMaterial = ocean_material;
 
-        mesh_filter_count = SphereMeshGenerator.get_no_of_groups(resolution);
-        mesh_filters = new MeshFilter[mesh_filter_count];
-        mesh_list = new Mesh[mesh_filter_count];
-        for (int i = 0; i < mesh_filter_count; i++) {
-            GameObject meshObj = new GameObject("Mesh");
-            meshObj.transform.parent = transform;
-            meshObj.transform.localPosition = Vector3.zero;
-            meshObj.AddComponent<MeshRenderer>().sharedMaterial = ocean_material;
+        mesh_filter = meshObj.AddComponent<MeshFilter>();
+        mesh_filter.sharedMesh = new Mesh();
 
-            mesh_filters[i] = meshObj.AddComponent<MeshFilter>();
-            mesh_filters[i].sharedMesh = new Mesh();
-            mesh_list[i] = mesh_filters[i].sharedMesh;
-        }
         transform.localPosition = Vector3.zero;
     }
 
@@ -45,18 +38,11 @@ public class OceanSphere : MonoBehaviour {
     }
 
     private void generate_mesh() {
-        int group_count = SphereMeshGenerator.get_no_of_groups(resolution);
-        if (group_count != mesh_filter_count) {
-            mesh_filter_count = group_count;
-            for (int i = transform.childCount - 1; i >= 0; i--)
-                DestroyImmediate(transform.GetChild(i).gameObject);
-            initialize_mesh_filters();
-        }
         if (shape_settings == null) {
             Debug.Log("Shape settings not set!");
             return;
         }
-        SphereMeshGenerator.construct_mesh(mesh_list, resolution, shape_settings, false);
+        SphereMeshGenerator.construct_mesh(mesh_filter.sharedMesh, resolution, shape_settings, false);
     }
 
     public void OnShapeSettingsUpdated() {

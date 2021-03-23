@@ -6,14 +6,14 @@ using UnityEngine;
 public class Planet : MonoBehaviour {
     // components
     [SerializeField, HideInInspector]
-    private MeshFilter[] mesh_filters;
-    private Mesh[] mesh_list;
+    private MeshFilter mesh_filter;
     private MeshCollider sphere_collider;
 
     // settings
     [Range(20, 10000000)]
     public int resolution = 50;
     public bool slow_normals_calculation = true;
+    public bool low_res_collider = true;
     public Material planet_material;
     public ShapeSettings shape_settings;
     public ColorSettings color_settings;
@@ -22,29 +22,25 @@ public class Planet : MonoBehaviour {
 
     [ContextMenu("initialize")]
     void initialize() {
-        initialize_mesh_filters();
+        initialize_mesh_filter();
         initialize_collider();
     }
 
-    private void initialize_mesh_filters() {
+    private void initialize_mesh_filter() {
         // clear all sub meshes
         for (int i = transform.childCount - 1; i >= 0; i--)
             DestroyImmediate(transform.GetChild(i).gameObject);
             
-        // initialize mesh filters
-        int mesh_filter_count = SphereMeshGenerator.get_no_of_groups(resolution);
-        mesh_filters = new MeshFilter[mesh_filter_count];
-        mesh_list = new Mesh[mesh_filter_count];
-        for (int i = 0; i < mesh_filter_count; i++) {
-            GameObject meshObj = new GameObject("SubMesh" + (i + 1));
-            meshObj.transform.parent = transform;
-            meshObj.transform.localPosition = Vector3.zero;
-            meshObj.AddComponent<MeshRenderer>().sharedMaterial = planet_material;
+        // initialize mesh filter
+        GameObject meshObj = new GameObject("Mesh");
+        meshObj.transform.parent = transform;
+        meshObj.transform.localPosition = Vector3.zero;
+        meshObj.AddComponent<MeshRenderer>().sharedMaterial = planet_material;
 
-            mesh_filters[i] = meshObj.AddComponent<MeshFilter>();
-            mesh_filters[i].sharedMesh = new Mesh();
-            mesh_list[i] = mesh_filters[i].sharedMesh;
-        }
+        mesh_filter = meshObj.AddComponent<MeshFilter>();
+        mesh_filter.sharedMesh = new Mesh();
+        mesh_filter.sharedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        
         transform.localPosition = Vector3.zero;
     }
     private void initialize_collider() {
@@ -54,9 +50,13 @@ public class Planet : MonoBehaviour {
         set_collider();
     }
     private void set_collider() {
-        Mesh[] m_list = new Mesh[] {new Mesh()};
-        SphereMeshGenerator.construct_mesh(m_list, 50000, shape_settings, false);
-        sphere_collider.sharedMesh = m_list[0];
+        Mesh colider_mesh = new Mesh();
+        colider_mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        int col_res = 1000000;
+        if (low_res_collider)
+            col_res = 500000;
+        SphereMeshGenerator.construct_mesh(colider_mesh, col_res, shape_settings, false);
+        sphere_collider.sharedMesh = colider_mesh;
     }
 
     [ContextMenu("generate")]
@@ -70,7 +70,7 @@ public class Planet : MonoBehaviour {
             Debug.Log("Shape settings not set!");
             return;
         }
-        SphereMeshGenerator.construct_mesh(mesh_list, resolution, shape_settings, slow_normals_calculation);
+        SphereMeshGenerator.construct_mesh(mesh_filter.sharedMesh, resolution, shape_settings, slow_normals_calculation);
         set_collider();
     }
     private void generate_color() {
@@ -78,8 +78,7 @@ public class Planet : MonoBehaviour {
             Debug.Log("Color settings not set!");
             return;
         }
-        for (int i = 0; i < mesh_filters.Length; i++)
-            mesh_filters[i].GetComponent<MeshRenderer>().sharedMaterial.color = color_settings.planet_color;
+        mesh_filter.GetComponent<MeshRenderer>().materials[0].SetColor("BaseMap", color_settings.planet_color);
     }
 
     public void OnShapeSettingsUpdated() {
