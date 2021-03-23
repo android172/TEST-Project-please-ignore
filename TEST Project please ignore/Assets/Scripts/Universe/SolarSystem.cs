@@ -8,11 +8,31 @@ namespace Universe
     {
         // [SerializeField] private int debugSteps = 10;
 
+        [SerializeField]
+        private GravityObject[] gravityObjects;
+
         public List<CelestialBody> celestialBodies;
+
+        private void Start()
+        {
+            gravityObjects = FindObjectsOfType<GravityObject>();
+        }
+
+        public Vector3 CalculateVelocity(Vector3 position, Vector3 velocity, float timeStep)
+        {
+            foreach (var otherBody in celestialBodies)
+            {
+                float sqrDst = (otherBody.transform.position -position).sqrMagnitude;
+                Vector3 forceDir = (otherBody.transform.position - position).normalized;
+
+                Vector3 acceleration = forceDir * UniverseConstants.G * otherBody.Mass / sqrDst;
+                velocity += acceleration * timeStep;
+            }
+            return velocity;
+        }
 
         private void FixedUpdate()
         {
-
             CelestialBody[] otherBodies = celestialBodies.ToArray();
 
             foreach (CelestialBody body in celestialBodies)
@@ -32,6 +52,11 @@ namespace Universe
                 body.transform.position = body.transform.position + newVelocity * Time.fixedDeltaTime;*/
                 body.UpdateVelocity(otherBodies, Time.fixedDeltaTime);
             }
+
+            foreach(GravityObject go in gravityObjects)
+            {
+                go.UpdateVelocity(otherBodies, Time.fixedDeltaTime);
+            }
         }
 
         private void Update()
@@ -39,6 +64,11 @@ namespace Universe
             foreach (CelestialBody body in celestialBodies)
             {
                 body.UpdatePosition(Time.deltaTime);
+            }
+
+            foreach (GravityObject go in gravityObjects)
+            {
+                go.UpdatePosition(Time.deltaTime);
             }
         }
 

@@ -4,12 +4,15 @@ using UnityEngine;
 
 namespace Universe
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class CelestialBody : MonoBehaviour
     {
         [SerializeField] public float surfaceGravity;
         [SerializeField] public float radius;
         [SerializeField] public Vector3 initialVelocity;
         [SerializeField] public Color trailColor;
+
+        private Rigidbody rb;
 
         private Vector3 velocity;
 
@@ -24,6 +27,13 @@ namespace Universe
         private void Awake()
         {
             velocity = initialVelocity;
+            rb = GetComponent<Rigidbody>();
+            if (rb == null)
+            {
+                rb = gameObject.AddComponent<Rigidbody>();
+            }
+            rb.useGravity = false;
+            rb.mass = Mass;
         }
 
         public void UpdateVelocity(CelestialBody[] allBodies, float timeStep)
@@ -50,7 +60,6 @@ namespace Universe
         {
             //rb.MovePosition(rb.position + velocity * timeStep);
             transform.position += velocity * timeStep;
-
         }
     }
 }
