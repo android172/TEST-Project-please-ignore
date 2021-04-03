@@ -349,3 +349,4 @@ MonoBehaviour:
   beforePostProcessCustomPostProcesses: []
   afterPostProcessCustomPostProcesses:
   - Atmosphere, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - CloudPPEffect, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
