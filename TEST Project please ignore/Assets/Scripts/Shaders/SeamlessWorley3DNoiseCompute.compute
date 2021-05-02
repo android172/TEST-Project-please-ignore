@@ -1,0 +1,84 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// params
+RWTexture3D<float> noise_texture;
+RWStructuredBuffer<float3> points;
+
+uint resolution;
+uint cells_per_axis;
+
+// local
+static const int3 offsets[27] = {
+    int3(-1, -1, -1),
+    int3(-1, -1, 0),
+    int3(-1, -1, 1),
+    int3(-1, 0, -1),
+    int3(-1, 0, 0),
+    int3(-1, 0, 1),
+    int3(-1, 1, -1),
+    int3(-1, 1, 0),
+    int3(-1, 1, 1),
+    int3(0, -1, -1),
+    int3(0, -1, 0),
+    int3(0, -1, 1),
+    int3(0, 0, -1),
+    int3(0, 0, 0),
+    int3(0, 0, 1),
+    int3(0, 1, -1),
+    int3(0, 1, 0),
+    int3(0, 1, 1),
+    int3(1, -1, -1),
+    int3(1, -1, 0),
+    int3(1, -1, 1),
+    int3(1, 0, -1),
+    int3(1, 0, 0),
+    int3(1, 0, 1),
+    int3(1, 1, -1),
+    int3(1, 1, 0),
+    int3(1, 1, 1)
+};
+
+float sample_at(float3 sample_position, uint cells_per_axis, uint index_base);
+
+[numthreads(16,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID) {
+    if (any(id >= resolution)) return;
+    float3 sample_position = ((float3)id + 0.5) / resolution;
+
+    // noise_texture[id.xyz] = 1.0 - sample_at(sample_position, cells_per_axis, 0);
+
+    float noise_sum = 0;
+	float amplitude = 1;
+	float total_amplitude = 0;
+	float frequency = cells_per_axis;
+    float offset = 0;
+    for (int i = 0; i < 4; i++) {
+        uint cpa = (uint)frequency;
+        noise_sum += sample_at(sample_position, cpa, offset) * amplitude;
+        total_amplitude += amplitude;
+		amplitude *= 0.5;
+		frequency *= 1.5;
+        offset += cpa * cpa * cpa;
+    }
+
+    noise_texture[id.xyz] = 0.5 - noise_sum / total_amplitude;
+}
+
+float sample_at(float3 sample_position, uint cells_per_axis, uint index_base) {
+    int3 point_loc = floor(sample_position * cells_per_axis);
+
+    float min_sq_distance = 1;
+    for (uint i = 0; i < 27; i++) {
+        int3 adj_point_loc = point_loc + offsets[i];
+        bool3 oub_mask = adj_point_loc < 0 || adj_point_loc == (int)cells_per_axis;
+        adj_point_loc = (adj_point_loc + cells_per_axis) % cells_per_axis;
+
+        uint index = index_base + (adj_point_loc.x * cells_per_axis + adj_point_loc.y) * cells_per_axis + adj_point_loc.z;
+        float3 sample_offset = sample_position - (points[index] + offsets[i] * oub_mask);
+        sample_offset *= cells_per_axis;
+        min_sq_distance = min(min_sq_distance, dot(sample_offset, sample_offset));
+    }
+
+    return sqrt(min_sq_distance);
+}

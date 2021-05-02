@@ -23,18 +23,18 @@ float fractal_noise(float3 point_v, float4 settings[3]) {
     return fractal_noise(point_v, (int)settings[0].x, settings[0].y, settings[0].z, settings[0].w, settings[1].x, settings[1].y, float3(settings[1].z, settings[1].w, settings[2].x));
 }
 
-float worley_noise(float3 point_v, float frequency, float strength) {
+float worley_noise(float3 point_v, float frequency, float strength, float3 seed) {
 	float noise_sum = 0;
 	float amplitude = 1;
 	float total_amplitude = 0;
-	for (int i = 0; i < 5; i++) {
-		noise_sum += cellular(point_v * frequency).x * amplitude;
+	for (int i = 0; i < 3; i++) {
+		noise_sum += cellular(point_v * frequency + seed).x * amplitude;
 		total_amplitude += amplitude;
 		amplitude *= 0.5;
 		frequency *= 1.5;
 	}
 
-    return (0.5 - noise_sum / total_amplitude) * strength;
+    return (0.6 - noise_sum / total_amplitude) * strength;
 }
 
 float blue_noise(float3 point_v) {
