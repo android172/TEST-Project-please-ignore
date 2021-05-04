@@ -74,10 +74,14 @@ public sealed class CloudPPEffect : CustomPostProcessVolumeComponent, IPostProce
         m_Material.SetColor("_sun_color", SunColor.value);
         m_Material.SetVector("_phase_params", PhaseParametars);
 
-        float t = Time.time / 20.0f;
-        // float t = 0;
+        float t = Time.time / (Radius.value * 10.0f);
+        Vector3 offset = new Vector3(
+            Radius.value * Mathf.Cos(t),
+            t,
+            Radius.value * Mathf.Sin(t)
+        );
 
-        m_Material.SetVector("_offset", new Vector3(t,0,0));
+        m_Material.SetVector("_offset", offset);
     }
 
     public override void Cleanup()

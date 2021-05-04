@@ -82,8 +82,8 @@
         float r = _shape_parametars.w;
         float3 q = ray_origin - (float3)_shape_parametars;
 
-        float r1 = (r - _width/2);
-        float r2 = (r + _width/2);
+        float r1 = (r - _width/2.0);
+        float r2 = (r + _width/2.0);
 
         float a = dot(ray_dir, ray_dir);
         float b = dot(ray_dir, q);
@@ -121,36 +121,44 @@
         d3 = (-b + sqrt(D2)) / a;
         d4 = (-b - sqrt(D2)) / a;
 
-        float t1 = (d1 < 0)? Max_float() : d1;
-        float t2 = (d2 < 0)? Max_float() : d2;
-        float t3 = (d3 < 0)? Max_float() : d3;
-        float t4 = (d4 < 0)? Max_float() : d4;
-
-        float min_t = min(min(min(t1, t2), t3), t4);
-
-        if (min_t == Max_float()) return float2(0, 0);
-
-        if ((d1 + d2) * (d1 + d2) < 4 * r1 * r1) {
-            distance_to_box = min_t;
-            distance_inside_box = max(max(max(d1, d2), d3), d4) - distance_to_box;
-            return float2(distance_to_box, distance_inside_box);
+        int g = 0;
+        if (d1 < 0) {
+            d1 = Max_float();
+            g += 1;
         }
-        if ((d3 + d4) * (d3 + d4) < 4 * r2 * r2) {
-            distance_to_box = 0;
-            distance_inside_box = min_t;
-            return float2(distance_to_box, distance_inside_box);
+        if (d2 < 0) {
+            d2 = Max_float();
+            g += 1;
+        }
+        if (d3 < 0) {
+            d3 = Max_float();
+            g += 1;
+        }
+        if (d4 < 0) {
+            d4 = Max_float();
+            g += 1;
         }
 
-        distance_to_box = min_t;
+        if (g == 4) return float2(0, 0);
 
-        t1 = (d1 == min_t)? Max_float() : d1 - min_t;
-        t2 = (d2 == min_t)? Max_float() : d2 - min_t;
-        t3 = (d3 == min_t)? Max_float() : d3 - min_t;
-        t4 = (d4 == min_t)? Max_float() : d4 - min_t;
-        
-        distance_inside_box = min(min(min(t1, t2), t3), t4);
+        float min_d = min(min(min(d1, d2), d3), d4);
+
+        if (g % 2 == 1) {
+            distance_inside_box = min_d;
+            return float2(distance_to_box, distance_inside_box);
+        }
+
+        distance_to_box = min_d;
+
+        d1 = (d1 == min_d)? Max_float() : d1 - min_d;
+        d2 = (d2 == min_d)? Max_float() : d2 - min_d;
+        d3 = (d3 == min_d)? Max_float() : d3 - min_d;
+        d4 = (d4 == min_d)? Max_float() : d4 - min_d;
+
+        distance_inside_box = min(min(min(d1, d2), d3), d4);
 
         return float2(distance_to_box, distance_inside_box);
+
         // old
         // float3 t0 = (bounds_min - ray_origin) / ray_dir;
         // float3 t1 = (bounds_max - ray_origin) / ray_dir;
@@ -188,8 +196,6 @@
     }
 
     float calculate_density(float3 at_point) {
-        _offset = 0;
-
         // calculate regions
         float r1 = -0.05;
         float r2 = -0.015;
@@ -199,14 +205,14 @@
         float region = region_sample(at_point);
         // calculete coverage of region
         float coverage = 0.5 * (
-            0.5  / (1 + exp(-slope * (region - r1))) +
+            0.4  / (1 + exp(-slope * (region - r1))) +
             0.15 / (1 + exp(-slope * (region - r2))) +
             0.25 / (1 + exp(-slope * (region - r3))) +
             0.1  / (1 + exp(-slope * (region - r4)))
         ) - 0.3;
-
+        
         // general height factors
-        float height = distance((float3)_shape_parametars, at_point) - _shape_parametars.w + _width/2;
+        float height = distance((float3)_shape_parametars, at_point) - _shape_parametars.w;
         float height_factor = (1 - pow(abs(2 * height / _width), 12)) / (1 + exp(12 / _width * (height - coverage * 8))) - 1;
         float height_fade = 1 - pow(abs((2 * height + 1) / (_width + 1)), 12);
 
@@ -276,7 +282,7 @@
         // march trough cloud
         float step_size = _width / 8;
         if (distance_inside_box / step_size > 50) step_size = distance_inside_box / 50;
-        float extra_distance = blue_noise(ray_dir) * 0;
+        float extra_distance = blue_noise(ray_dir) * 0.1;
 
         float transmittance = 1;
         float3 light_energy = 0;
@@ -298,8 +304,18 @@
         }
 
         // calculate cloud color
-        float region = region_sample(ray_origin + ray_dir * distance_to_box);
+        float3 cloud_coord = ray_origin + ray_dir * distance_to_box;
+        float region = region_sample(cloud_coord);
         float cloud_color_multiplier = 1 - (0.6 / (1 + exp(-200 * (region - 0.06))));
+        // planet side
+        float side_coef = dot(
+            normalize(cloud_coord - (float3)_shape_parametars), 
+            normalize(_sun_position - (float3)_shape_parametars));
+        if (side_coef < 0) {
+            side_coef = 1 - side_coef;
+            side_coef *= side_coef*side_coef*side_coef*side_coef*side_coef;
+            cloud_color_multiplier *= 1/side_coef;
+        }
 
         color = color * transmittance + light_energy * (_sun_color * cloud_color_multiplier);
 
