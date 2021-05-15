@@ -26,8 +26,12 @@
 	{
 		float4 positionCS : SV_POSITION;
 		float2 texcoord   : TEXCOORD0;
+		float3 view_dir   : TEXCOORD1;
 		UNITY_VERTEX_OUTPUT_STEREO
 	};
+
+	// properties required for vert shader
+	float4x4 _ViewProjectInverse;
 
 	Varyings Vert(Attributes input)
 	{
@@ -36,6 +40,17 @@
 		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 		output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
 		output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
+
+		float4 camera_foward_dir = mul(_ViewProjectInverse, float4(0.0, 0.0, 0.5, 1.0));
+        camera_foward_dir.xyz /= camera_foward_dir.w;
+        camera_foward_dir.xyz -= _WorldSpaceCameraPos;
+
+        float4 camera_local_dir = mul(_ViewProjectInverse, float4(output.texcoord.x * 2.0 - 1.0, output.texcoord.y * 2.0 - 1.0, 0.5, 1.0));
+        camera_local_dir.xyz /= camera_local_dir.w;
+        camera_local_dir.xyz -= _WorldSpaceCameraPos;
+
+        output.view_dir = camera_local_dir.xyz / length(camera_foward_dir.xyz);
+
 		return output;
 	}
 
@@ -74,9 +89,9 @@
 	}
 
 	float densityAtPoint(float3 samplePoint) {
-		float heightAboveSurf = distance(samplePoint, _Position);
+		float heightAboveSurf = length(samplePoint - _Position) - _PlanetRadius;//distance(samplePoint, _Position);
 		float height01 = heightAboveSurf / (_AtmosphereRadius - _PlanetRadius);
-		float localDensity = exp(-height01 * _DensityFalloff);// * (1 - height01);
+		float localDensity = exp(-height01 * _DensityFalloff) * (1 - height01);
 		return localDensity;
 	}
 
@@ -87,7 +102,7 @@
 
 		for (int i = 0; i < _OpticalDepthPoints; i+= 1) {
 			float localDensity = densityAtPoint(densitySamplePoint);
-			opticalDepth += 0.5 * step;
+			opticalDepth += localDensity * step;
 			densitySamplePoint += rayDir * step;
 		}
 		return opticalDepth;
@@ -116,39 +131,36 @@
 
 	float4 CustomPostProcess(Varyings input) : SV_Target
 	{
-		UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+		//OLD
+		/*float depthOld = LoadCameraDepth(input.positionCS.xy);
+		PositionInputs posInput = GetPositionInput(input.positionCS.xy, _ScreenSize.zw, depthOld, UNITY_MATRIX_I_VP, UNITY_MATRIX_V);
+		float3 rayDir = GetWorldSpaceNormalizeViewDir(posInput.positionWS);*/
 
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 		uint2 positionSS = input.texcoord * _ScreenSize.xy;
+
+		//
 		float3 oColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        float sceneDepthNonLinear = LOAD_TEXTURE2D_X(_CameraDepthTexture, positionSS);
+        float sceneDepth = LinearEyeDepth(sceneDepthNonLinear, _ZBufferParams) * length(input.view_dir);
 
-		float3 cameraPos = -_WorldSpaceCameraPos;
-		float depth = LoadCameraDepth(input.positionCS.xy);
-		PositionInputs posInput = GetPositionInput(input.positionCS.xy, _ScreenSize.zw, depth, UNITY_MATRIX_I_VP, UNITY_MATRIX_V);
-		float3 rayDir = GetWorldSpaceNormalizeViewDir(posInput.positionWS);
+		float3 rayOrigin = _WorldSpaceCameraPos;
+        float3 rayDir = normalize(input.view_dir);
 
-		float2 hit = raySphere(-_Position, _AtmosphereRadius, cameraPos, rayDir);
+		float2 hitInfo = raySphere(_Position, _AtmosphereRadius, rayOrigin, rayDir);
+		float distToAtmo = hitInfo.x;
+		float distThroughAtmo = min(hitInfo.y, sceneDepth - distToAtmo) / (_AtmosphereRadius * 2);
 
-		float depthNonLinear = LoadCameraDepth(positionSS);
-		float linearEyeDepth = LinearEyeDepth(depthNonLinear, _ZBufferParams);
-
-		float distToSurf = (linearEyeDepth) * length(posInput.positionWS);
-		float distToAtmo = hit.x;
-		//float fixedDepth = distance(cameraPos, _Position) * _DepthOffset;
-		float distThroughAtmo = min(hit.y, distToSurf - distToAtmo) / (_AtmosphereRadius * 2);
-
-		//float3 newColor = (distThroughAtmo );
-
-		//return distThroughAtmo;
+		//return distThroughAtmo / (_AtmosphereRadius * 2);
 
 		//return float4(lerp(oColor, newColor, _Intensity), 1);
 
 		if (distThroughAtmo > 0) {
 			const float eps = 0.0001;
-			float3 pointInAtmo = cameraPos + rayDir * (distToAtmo + eps);
+			float3 pointInAtmo = rayOrigin + rayDir * (distToAtmo + eps);
 			float3 light = calcLight(pointInAtmo, rayDir, distThroughAtmo - eps * 2, oColor);
 			return float4(light, 1);
 		}
-
 		return float4(oColor.rgb, 1);
 	}
 	ENDHLSL

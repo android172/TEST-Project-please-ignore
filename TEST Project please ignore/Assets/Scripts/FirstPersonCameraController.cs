@@ -29,6 +29,14 @@ public class FirstPersonCameraController : MonoBehaviour
             t.rotation = get_rotation();
         }
 
+        public void update_rigidbody(Rigidbody rb, Vector3 translation)
+        {
+            //rb.MovePosition(position);
+            rb.velocity *= 0.99f;
+            rb.velocity += translation;
+            rb.rotation = get_rotation();
+        }
+
         public void lerp_towards(CameraState target, float position_lerp_factor, float rotation_lerp_factor)
         {
             position = Vector3.Lerp(position, target.position, position_lerp_factor);
@@ -43,6 +51,8 @@ public class FirstPersonCameraController : MonoBehaviour
     CameraState target_state;
 
     bool cursor_locked = false;
+
+    Rigidbody body;
 
     GameObject planet;
     bool on_planet = false;
@@ -80,6 +90,7 @@ public class FirstPersonCameraController : MonoBehaviour
         target_state = new CameraState();
         current_state.position = transform.position;
         target_state.position = transform.position;
+        body = GetComponent<Rigidbody>();
 
         // unlock mouse
         Cursor.visible = false;
@@ -189,6 +200,7 @@ public class FirstPersonCameraController : MonoBehaviour
         var rotation_lerp_factor = 1f - Mathf.Exp((Mathf.Log(1f - 0.99f) / 0.01f) * Time.deltaTime);
         current_state.lerp_towards(target_state, position_lerp_factor, rotation_lerp_factor);
 
-        current_state.update_transform(transform);
+        //current_state.update_transform(transform);
+        current_state.update_rigidbody(body, translation);
     }
 }

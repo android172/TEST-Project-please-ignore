@@ -21,7 +21,7 @@ public sealed class Atmosphere : CustomPostProcessVolumeComponent, IPostProcessC
 
     public ClampedIntParameter scatterPoints = new ClampedIntParameter(8, 0, 128);
     public ClampedIntParameter opticalDepthPoints = new ClampedIntParameter(8, 0, 128);
-    public FloatParameter densityFalloff = new FloatParameter(1f);
+    public FloatParameter densityFalloff = new ClampedFloatParameter(1f,0f,20f);
 
     public Vector3Parameter scatterCoefficients = new Vector3Parameter(new Vector3(0f, 0f, 0f));
     public FloatParameter scatterStrength = new FloatParameter(1f);
@@ -40,6 +40,8 @@ public sealed class Atmosphere : CustomPostProcessVolumeComponent, IPostProcessC
     {
         if (m_Material == null)
             return;
+
+        m_Material.SetMatrix("_ViewProjectInverse", (camera.camera.projectionMatrix * camera.camera.worldToCameraMatrix).inverse);
 
         m_Material.SetFloat("_Intensity", intensity.value);
         float atmosphereRadius = planetRadius.value * (1 + atmosphereScale.value);
