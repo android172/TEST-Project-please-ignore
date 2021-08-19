@@ -51,6 +51,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         crater_noise.randomize_seed();
     }
 
+    int group_size = 1000000;
     public override Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
         Vector3[] vertices = (Vector3[])vertices_in.Clone();
 
@@ -63,13 +64,7 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         heights_buf.SetData(heights);
         noise_compute_shader.SetBuffer(kernel_id, "heights", heights_buf);
 
-        // send vertices
-        ComputeBuffer vertices_buf = new ComputeBuffer(number_of_points, 3 * sizeof(float));
-        vertices_buf.SetData(vertices);
-        noise_compute_shader.SetBuffer(kernel_id, "vertices", vertices_buf);
-
-        // send number of vertices and radius
-        noise_compute_shader.SetInt("num_of_vertices", number_of_points);
+        // send radius
         noise_compute_shader.SetFloat("radius", radius);
 
         // send noise settings
@@ -93,15 +88,32 @@ public class RockyPlanetShapeSettings : ShapeSettings {
         float flatness_ratio = (flatness * 2f - 1f) * flatness_noise.strength + flatness_noise.base_height;
         noise_compute_shader.SetFloat("flatness_ratio", flatness_ratio);
 
-        // run
-        noise_compute_shader.Dispatch(kernel_id, 1024, 1, 1);
+        // do for every group
+        int no_of_groups = (number_of_points - 1) / group_size + 1;
+        for (int i = 0; i < no_of_groups; i++) {
+            int no_of_points_in_group = group_size;
+            if (i == no_of_groups - 1) no_of_points_in_group = number_of_points - i * group_size;
 
-        // return data
-        heights_buf.GetData(heights);
+            // send vertices
+            ComputeBuffer vertices_buf = new ComputeBuffer(no_of_points_in_group, 3 * sizeof(float));
+            vertices_buf.SetData(vertices, i * group_size, 0, no_of_points_in_group);
+            noise_compute_shader.SetBuffer(kernel_id, "vertices", vertices_buf);
 
-        // release buffers
+            // set number of vertices
+            noise_compute_shader.SetInt("num_of_vertices", no_of_points_in_group);
+
+            // run
+            noise_compute_shader.Dispatch(kernel_id, 1024, 1, 1);
+
+            // return data
+            heights_buf.GetData(heights, i * group_size, 0, no_of_points_in_group);
+
+            // release buffer
+            vertices_buf.Release();
+        }
+
+        // release buffer
         heights_buf.Release();
-        vertices_buf.Release();
 
         for (int i = 0; i < number_of_points; i++)
             vertices[i] *= heights[i];

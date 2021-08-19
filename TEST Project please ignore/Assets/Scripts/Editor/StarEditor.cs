@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(OceanSphere))]
-public class OceanEditor : CelestialObjectEditor {
+[CustomEditor(typeof(StarSphere))]
+public class StarEditor : Editor {
+
+    StarSphere star = null;
 
     private void OnEnable() {
-        co = (OceanSphere) target;
+        star = (StarSphere) target;
     }
 
     public override void OnInspectorGUI() {
-        OceanSphere ocean = (OceanSphere) co;
 
         using (var check = new EditorGUI.ChangeCheckScope()) {
             base.OnInspectorGUI();
-            if (check.changed) ocean.generate_ocean();
+            if (check.changed) star.OnRadiusUpdate();
         }
     }
 }

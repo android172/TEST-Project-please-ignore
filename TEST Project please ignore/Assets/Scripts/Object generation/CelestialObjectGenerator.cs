@@ -9,7 +9,8 @@ public class CelestialObjectGenerator : MonoBehaviour {
         Moon,
         RockyDryPlanet,
         RockyWetPlanet,
-        GasPlanet
+        GasPlanet,
+        Star
     }
 
     public AsteroidShapeSettings DefaultAsteroidShapeSettings;
@@ -18,88 +19,107 @@ public class CelestialObjectGenerator : MonoBehaviour {
     public RockyPlanetShapeSettings DefaultRockyPlanetWetShapeSettings;
     public OceanShapeSettings DefaultOceanShapeSettings;
 
-    [HideInInspector, SerializeField]
+    [SerializeField]
     Material SurfaceMaterial;
-    [HideInInspector, SerializeField]
+    [SerializeField]
     Material OceanMaterial;
+    [SerializeField]
+    Material StarMaterial;
 
-    [HideInInspector]
     public string ObjectName = "Celestial Object";
-    [HideInInspector]
     public COType ObjectType = COType.Asteroid;
-    [HideInInspector]
     [Min(0.5f)]
     public float ObjectRadius = 1f;
 
-    // [ContextMenu("Generate")]
     public void generate_object() {
         GameObject celestial_body = new GameObject(ObjectName);
 
+        GameObject surface = new GameObject("surface");
+        surface.transform.SetParent(celestial_body.transform);
+
         // if object is has no surface
-        if (ObjectType == COType.GasPlanet) {
-
-        }
-        // if object is solid
-        else {
-            GameObject surface = new GameObject("surface");
-            // planet script
-            Planet p = surface.AddComponent<Planet>();
+        if (ObjectType == COType.Star) {
+            // star script
+            StarSphere starS = surface.AddComponent<StarSphere>();
             // resolution
-            p.resolution = 1000000;
+            starS.Resolution = 25000;
             // material
-            p.planet_material = SurfaceMaterial;
-            // shape
-            switch (ObjectType) {
-                case COType.Asteroid:
-                    p.shape_settings = ScriptableObject.CreateInstance<AsteroidShapeSettings>();
-                    p.shape_settings.set_settings(DefaultAsteroidShapeSettings);
-                    break;
-                case COType.Moon:
-                    p.shape_settings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
-                    p.shape_settings.set_settings(DefaultMoonShapeSettings);
-                    break;
-                case COType.RockyDryPlanet:
-                    Debug.Log("BeenThere");
-                    p.shape_settings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
-                    p.shape_settings.set_settings(DefaultRockyPlanetDryShapeSettings);
-                    break;
-                case COType.RockyWetPlanet:
-                    p.shape_settings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
-                    p.shape_settings.set_settings(DefaultRockyPlanetWetShapeSettings);
-                    break;
-            }
-            p.shape_settings.radius = ObjectRadius;
-            p.shape_settings.randomize_seed();
-            // color
-            p.color_settings = null;
+            starS.Material = StarMaterial;
+            // radius
+            starS.Radius = this.ObjectRadius;
+            starS.OnRadiusUpdate();
             // tag
-            p.gameObject.tag = "Surface";
+            starS.gameObject.tag = "StarSurface";
             // initialize
-            p.generate_planet();
+            starS.initialize();
+            starS.OnShapeSettingsUpdated();
 
-            surface.transform.SetParent(celestial_body.transform);
+            // light
+            GameObject light = Instantiate<GameObject>(Resources.Load<GameObject>("Starlight"));
+            light.transform.SetParent(celestial_body.transform);
+            light.name = ObjectName + " " + "Light";
 
-            // if object has an ocean
-            if (ObjectType == COType.RockyWetPlanet) {
-                GameObject ocean = new GameObject("ocean");
-                // ocean script
-                OceanSphere o = ocean.AddComponent<OceanSphere>();
-                // resolution
-                o.resolution = 50000;
-                // material
-                o.ocean_material = OceanMaterial;
-                // shape
-                o.shape_settings = ScriptableObject.CreateInstance<OceanShapeSettings>();
-                o.shape_settings.set_settings(DefaultOceanShapeSettings);
-                o.shape_settings.radius = ObjectRadius;
-                o.shape_settings.randomize_seed();
-                // tag
-                o.gameObject.tag = "Ocean";
-                // initialize
-                o.generate_ocean();
+            return;
+        }
+        if (ObjectType == COType.GasPlanet) {
+            return;
+        }
 
-                ocean.transform.SetParent(celestial_body.transform);
-            }
+        // if object is solid
+        // planet script
+        Planet planetS = surface.AddComponent<Planet>();
+        // resolution
+        planetS.Resolution = 1000000;
+        // material
+        planetS.Material = SurfaceMaterial;
+        // shape
+        switch (ObjectType) {
+            case COType.Asteroid:
+                planetS.ShapeSettings = ScriptableObject.CreateInstance<AsteroidShapeSettings>();
+                planetS.ShapeSettings.set_settings(DefaultAsteroidShapeSettings);
+                break;
+            case COType.Moon:
+                planetS.ShapeSettings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
+                planetS.ShapeSettings.set_settings(DefaultMoonShapeSettings);
+                break;
+            case COType.RockyDryPlanet:
+                planetS.ShapeSettings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
+                planetS.ShapeSettings.set_settings(DefaultRockyPlanetDryShapeSettings);
+                break;
+            case COType.RockyWetPlanet:
+                planetS.ShapeSettings = ScriptableObject.CreateInstance<RockyPlanetShapeSettings>();
+                planetS.ShapeSettings.set_settings(DefaultRockyPlanetWetShapeSettings);
+                break;
+        }
+        planetS.ShapeSettings.radius = ObjectRadius;
+        planetS.ShapeSettings.randomize_seed();
+        // color
+        planetS.ColorSettings = null;
+        // tag
+        planetS.gameObject.tag = "Surface";
+        // initialize
+        planetS.generate_planet();
+
+        // if object has an ocean
+        if (ObjectType == COType.RockyWetPlanet) {
+            GameObject ocean = new GameObject("ocean");
+            // ocean script
+            OceanSphere oceanS = ocean.AddComponent<OceanSphere>();
+            // resolution
+            oceanS.Resolution = 50000;
+            // material
+            oceanS.Material = OceanMaterial;
+            // shape
+            oceanS.ShapeSettings = ScriptableObject.CreateInstance<OceanShapeSettings>();
+            oceanS.ShapeSettings.set_settings(DefaultOceanShapeSettings);
+            oceanS.ShapeSettings.radius = ObjectRadius;
+            oceanS.ShapeSettings.randomize_seed();
+            // tag
+            oceanS.gameObject.tag = "Ocean";
+            // initialize
+            oceanS.generate_ocean();
+
+            ocean.transform.SetParent(celestial_body.transform);
         }
     }
 }

@@ -15,11 +15,30 @@ public class COGenEditor : Editor {
 
     public override void OnInspectorGUI() {
         EditorGUILayout.LabelField("Default Settings");
-        base.OnInspectorGUI();
+        switch (COG.ObjectType) {
+            case CelestialObjectGenerator.COType.Asteroid:
+                EditorGUILayout.PropertyField(COG_serialized.FindProperty("DefaultAsteroidShapeSettings"), true);
+                break;
+            case CelestialObjectGenerator.COType.Moon:
+                EditorGUILayout.PropertyField(COG_serialized.FindProperty("DefaultMoonShapeSettings"), true);
+                break;
+            case CelestialObjectGenerator.COType.RockyDryPlanet:
+                EditorGUILayout.PropertyField(COG_serialized.FindProperty("DefaultRockyPlanetDryShapeSettings"), true);
+                break;
+            case CelestialObjectGenerator.COType.RockyWetPlanet:
+                EditorGUILayout.PropertyField(COG_serialized.FindProperty("DefaultRockyPlanetWetShapeSettings"), true);
+                EditorGUILayout.PropertyField(COG_serialized.FindProperty("DefaultOceanShapeSettings"), true);
+                break;
+        }
 
         GUILayout.Space(10);
         EditorGUILayout.LabelField("Materials Used");
-        if (COG.ObjectType != CelestialObjectGenerator.COType.GasPlanet) {
+        if (COG.ObjectType == CelestialObjectGenerator.COType.GasPlanet) {
+        }
+        else if (COG.ObjectType == CelestialObjectGenerator.COType.Star) {
+            EditorGUILayout.PropertyField(COG_serialized.FindProperty("StarMaterial"), true);
+        }
+        else {
             EditorGUILayout.PropertyField(COG_serialized.FindProperty("SurfaceMaterial"), true);
             if (COG.ObjectType == CelestialObjectGenerator.COType.RockyWetPlanet)
                 EditorGUILayout.PropertyField(COG_serialized.FindProperty("OceanMaterial"), true);

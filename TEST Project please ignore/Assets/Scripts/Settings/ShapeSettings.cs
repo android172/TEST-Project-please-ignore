@@ -103,6 +103,9 @@ public class ShapeSettings : ScriptableObject {
     }
     public virtual void randomize_seed() {}
     public virtual Vector3[] apply_noise(Vector3[] vertices_in, int number_of_points) {
-        return vertices_in;
+        Vector3[] vertices = (Vector3[])vertices_in.Clone();
+        for (int i = 0; i < number_of_points; i++)
+            vertices[i] *= radius;
+        return vertices;
     }
 }

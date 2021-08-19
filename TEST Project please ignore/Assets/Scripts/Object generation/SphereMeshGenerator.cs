@@ -47,7 +47,7 @@ public static class SphereMeshGenerator {
 
     // methods
     // construct mesh
-    public static void construct_mesh(Mesh target_mesh, int number_of_points, ShapeSettings settings, bool calc_normals) {
+    public static void construct_mesh(Mesh target_mesh, int number_of_points, ShapeSettings settings) {
         // construct unit sphere
         SphereMesh sphere;
         // if sphere with a given number of points is found sets vertices and indices and returns true
@@ -59,20 +59,12 @@ public static class SphereMeshGenerator {
 
         // deform sphere according to the given settings
         Vector3[] vertices_def = settings.apply_noise(sphere.vertices, number_of_points);
-
-        // normals calculation
-        Vector3[] normals;
-        if (calc_normals)
-            normals = calculate_normals(vertices_def, sphere.indices);
-        else
-            normals = new Vector3[number_of_points];
         
         // construct mesh
         target_mesh.Clear();
         target_mesh.vertices = vertices_def;
         target_mesh.triangles = sphere.indices;
-        if (calc_normals) target_mesh.SetNormals(normals);
-        else target_mesh.RecalculateNormals();
+        target_mesh.RecalculateNormals();
         target_mesh.SetUVs(0, sphere.vertices);
     }
 
@@ -123,8 +115,7 @@ public static class SphereMeshGenerator {
 
         // get triangles for indices
         string path = Application.persistentDataPath + "/" + number_of_points.ToString() + ".tri";
-
-        Debug.Log(path);
+        // Debug.Log(path);
 
         // check if triangulation is already done
         if (File.Exists(path)) {
@@ -450,27 +441,5 @@ public static class SphereMeshGenerator {
         Vector2 v2 = vector_a_to_b(p1, p3);
         if (Mathf.Abs(Vector2.Dot(v1, v2)) < EM) return true;
         return false;
-    }
-    // for normals
-    private static Vector3[] calculate_normals(Vector3[] vertices, int[] indices) {
-        Vector3[] normals = new Vector3[vertices.Length];
-        for (int i = 0; i < indices.Length / 3; i++) {
-            // // calculating normal of current triangle
-            // indexes of relevant vertices
-            int index_1 = indices[3 * i];
-            int index_2 = indices[3 * i + 1];
-            int index_3 = indices[3 * i + 2];
-            // normal calculation using cross product
-            Vector3 triangle_normal = Vector3.Cross(vertices[index_2] - vertices[index_1], vertices[index_3] - vertices[index_1]);
-            // // adding triangle normal as one of the factors of individual vertex normals
-            normals[index_1] += triangle_normal;
-            normals[index_2] += triangle_normal;
-            normals[index_3] += triangle_normal;
-        }
-        // normalizeing normal vectors
-        for (int i = 0; i < normals.Length; i++)
-            normals[i].Normalize();
-
-        return  normals;
     }
 }
