@@ -24,7 +24,7 @@ public sealed class Atmosphere : CustomPostProcessVolumeComponent, IPostProcessC
     public FloatParameter densityFalloff = new ClampedFloatParameter(1f,0f,20f);
 
     public Vector3Parameter scatterCoefficients = new Vector3Parameter(new Vector3(0f, 0f, 0f));
-    public FloatParameter scatterStrength = new FloatParameter(1f);
+    public FloatParameter scatterStrength = new ClampedFloatParameter(0.001f, 0f, .001f);
 
     public bool IsActive() => m_Material != null && intensity.value > 0f;
 
@@ -63,9 +63,9 @@ public sealed class Atmosphere : CustomPostProcessVolumeComponent, IPostProcessC
     {
         float strength = scatterStrength.value;
         Vector3 o = new Vector3();
-        o.x = Mathf.Pow(400 / v.x, 4) * strength;
-        o.y = Mathf.Pow(400 / v.y, 4) * strength;
-        o.z = Mathf.Pow(400 / v.z, 4) * strength;
+        o.x = Mathf.Pow(400 / v.x, 4) * strength * planetRadius.value;
+        o.y = Mathf.Pow(400 / v.y, 4) * strength * planetRadius.value;
+        o.z = Mathf.Pow(400 / v.z, 4) * strength * planetRadius.value;
 
         return o;
     }

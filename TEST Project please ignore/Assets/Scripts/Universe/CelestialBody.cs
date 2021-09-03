@@ -8,19 +8,26 @@ namespace Universe
     public class CelestialBody : MonoBehaviour
     {
         [SerializeField] public float surfaceGravity;
-        [SerializeField] public float radius;
+        //[SerializeField] public float radius;
         [SerializeField] public Vector3 initialVelocity;
         [SerializeField] public Color trailColor;
 
         private Rigidbody rb;
-
         private Vector3 velocity;
+
+        public float Radius
+        {
+            get
+            {
+                return transform.GetComponentInChildren<CelestialObject>().ShapeSettings.radius;
+            }
+        }
 
         public float Mass
         {
             get
             {
-                return surfaceGravity * radius * radius / UniverseConstants.G;
+                return surfaceGravity * Radius * Radius / UniverseConstants.G;
             }
         }
 

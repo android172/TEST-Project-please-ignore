@@ -109,6 +109,7 @@
 	}
 
 	float3 calcLight(float3 rayOrigin, float3 rayDir, float rayLength, float3 oColor) {
+		
 		float3 inPoint = rayOrigin;
 		float step = rayLength / (_ScatterPoints - 1);
 		float3 inScatteredLight = 0;
@@ -125,8 +126,8 @@
 			inPoint += rayDir * step;
 		}
 
-		float oColTransmit = exp(-viewRayOpticalDepth);
-		return oColor * oColTransmit + inScatteredLight;
+		//float oColTransmit = exp(-viewRayOpticalDepth);
+		return oColor /** oColTransmit*/ + inScatteredLight;
 	}
 
 	float4 CustomPostProcess(Varyings input) : SV_Target
@@ -149,19 +150,20 @@
 
 		float2 hitInfo = raySphere(_Position, _AtmosphereRadius, rayOrigin, rayDir);
 		float distToAtmo = hitInfo.x;
-		float distThroughAtmo = min(hitInfo.y, sceneDepth - distToAtmo) / (_AtmosphereRadius * 2);
+		float distThroughAtmo = min(hitInfo.y, sceneDepth - distToAtmo);
 
 		//return distThroughAtmo / (_AtmosphereRadius * 2);
 
 		//return float4(lerp(oColor, newColor, _Intensity), 1);
+		//return float4(oColor, 1);
 
 		if (distThroughAtmo > 0) {
 			const float eps = 0.0001;
 			float3 pointInAtmo = rayOrigin + rayDir * (distToAtmo + eps);
-			float3 light = calcLight(pointInAtmo, rayDir, distThroughAtmo - eps * 2, oColor);
+			float3 light = calcLight(pointInAtmo, rayDir, distThroughAtmo - eps * 2, oColor);// / (_AtmosphereRadius * 2);
 			return float4(light, 1);
 		}
-		return float4(oColor.rgb, 1);
+		return float4(oColor, 1);
 	}
 	ENDHLSL
 

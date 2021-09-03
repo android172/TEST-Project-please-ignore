@@ -67,6 +67,11 @@ namespace Universe
             }
         }
 
+        private void OnCollisionStay(Collision collision)
+        {
+            velocity = rb.velocity;
+        }
+
         private bool useGravity = true;
 
         IEnumerator GravityCooldown()

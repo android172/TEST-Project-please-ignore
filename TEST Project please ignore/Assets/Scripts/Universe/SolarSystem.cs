@@ -9,13 +9,13 @@ namespace Universe
         // [SerializeField] private int debugSteps = 10;
 
         [SerializeField]
-        private GravityObject[] gravityObjects;
+        private List<GravityObject> gravityObjects;
 
-        public List<CelestialBody> celestialBodies;
+        public CelestialBody[] celestialBodies;
 
         private void Start()
         {
-            gravityObjects = FindObjectsOfType<GravityObject>();
+            gravityObjects = new List<GravityObject> (FindObjectsOfType<GravityObject>());
         }
 
         public Vector3 CalculateVelocity(Vector3 position, Vector3 velocity, float timeStep)
@@ -33,7 +33,7 @@ namespace Universe
 
         private void FixedUpdate()
         {
-            CelestialBody[] otherBodies = celestialBodies.ToArray();
+            CelestialBody[] otherBodies = celestialBodies;
 
             foreach (CelestialBody body in celestialBodies)
             {
@@ -77,7 +77,7 @@ namespace Universe
             foreach(CelestialBody body in celestialBodies)
             {
                 Gizmos.color = body.trailColor;
-                Gizmos.DrawSphere(body.transform.position, body.radius);
+                Gizmos.DrawSphere(body.transform.position, body.Radius);
             }
         }
     }
