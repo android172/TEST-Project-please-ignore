@@ -72,6 +72,8 @@
     float _scale;
 
     // cloud settings
+    int _high_resolution;
+    int _number_of_samples;
     float _cloud_density_factor;
     float _darkness_threshold;
     float3 _offset;
@@ -224,10 +226,12 @@
     float calculate_density_ww(float3 at_point) {
         // cloud base shape
         float density = calculate_density(at_point);
-        // base shape mask
-        float on_cloud = clamp(density, 0, 0.05) / 0.05;
-        // add cloud details
-        density += on_cloud * (worley_noise(at_point, 0.3 * _scale, 0.1, _offset));
+        if (_high_resolution) {
+            // base shape mask
+            float on_cloud = clamp(density, 0, 0.05) / 0.05;
+            // add cloud details
+            density += on_cloud * (worley_noise(at_point, 0.3 * _scale, 0.1, _offset));
+        }
 
         // worley noise alternative
         // float f = 10;
@@ -280,7 +284,7 @@
             return float4(color, 1);
         
         // march trough cloud
-        float step_size = _width / 8;
+        float step_size = _width / _number_of_samples;
         if (distance_inside_box / step_size > 50) step_size = distance_inside_box / 50;
         float extra_distance = blue_noise(ray_dir) * 0.1;
 

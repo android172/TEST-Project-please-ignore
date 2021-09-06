@@ -6,7 +6,7 @@ using UnityEngine;
 public abstract class CelestialObject : MonoBehaviour {
     // components
     [SerializeField, HideInInspector]
-    private MeshFilter MeshFilter;
+    protected MeshFilter MeshFilter;
     private MeshCollider SphereCollider;
     public ShapeSettings ShapeSettings;
 
@@ -66,5 +66,9 @@ public abstract class CelestialObject : MonoBehaviour {
 
     public void OnShapeSettingsUpdated() {
         generate_mesh();
+    }
+
+    public Vector3[] get_vertices() {
+        return MeshFilter.sharedMesh.vertices;
     }
 }

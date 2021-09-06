@@ -31,6 +31,8 @@ public class CelestialObjectGenerator : MonoBehaviour {
     [Min(0.5f)]
     public float ObjectRadius = 1f;
 
+    private int SphereResolution = 1000000;
+
     public void generate_object() {
         GameObject celestial_body = new GameObject(ObjectName);
 
@@ -69,7 +71,7 @@ public class CelestialObjectGenerator : MonoBehaviour {
         // planet script
         Planet planetS = surface.AddComponent<Planet>();
         // resolution
-        planetS.Resolution = 1000000;
+        planetS.Resolution = SphereResolution;
         // material
         planetS.Material = SurfaceMaterial;
         // shape
@@ -106,7 +108,7 @@ public class CelestialObjectGenerator : MonoBehaviour {
             // ocean script
             OceanSphere oceanS = ocean.AddComponent<OceanSphere>();
             // resolution
-            oceanS.Resolution = 50000;
+            oceanS.Resolution = SphereResolution;
             // material
             oceanS.Material = OceanMaterial;
             // shape
@@ -118,6 +120,9 @@ public class CelestialObjectGenerator : MonoBehaviour {
             oceanS.gameObject.tag = "Ocean";
             // initialize
             oceanS.generate_ocean();
+
+            // Set colors
+            oceanS.set_mesh_wave_color_mask(planetS.get_vertices(), 8);
 
             ocean.transform.SetParent(celestial_body.transform);
         }
