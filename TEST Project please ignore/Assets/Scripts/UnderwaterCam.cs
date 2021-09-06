@@ -62,16 +62,15 @@ public class UnderwaterCam : MonoBehaviour
 
     bool CheckUnderwater()
     {
-        
-        //GameObject[] water = GameObject.FindGameObjectsWithTag("Water");
 
         foreach(GameObject w in GameObject.FindGameObjectsWithTag("Ocean"))
         {
-            float radius = w.GetComponent<OceanSphere>().shape_settings.radius;
+            float radius = w.GetComponent<CelestialObject>().ShapeSettings.radius;
             float dx = transform.position.x - w.transform.position.x;
             float dy = transform.position.y - w.transform.position.y;
             float dz = transform.position.z - w.transform.position.z;
             float temp = Mathf.Sqrt(dx*dx + dy*dy + dz*dz);
+            
             if(temp < radius)
                 return true;
         }
