@@ -7,12 +7,12 @@ public class OxygenBar : MonoBehaviour
 {
 
     public Slider o2Bar;
-    public CharacterControler playerOxygen;
+    public HudController playerOxygen;
 
     // Start is called before the first frame update
     void Start()
     {
-        playerOxygen = GameObject.FindGameObjectWithTag("HUD").GetComponent<CharacterControler>();
+        playerOxygen = GameObject.FindGameObjectWithTag("HUD").GetComponent<HudController>();
         o2Bar = GetComponent<Slider>();
         o2Bar.maxValue = playerOxygen.maxO2;
         o2Bar.value = playerOxygen.maxO2;

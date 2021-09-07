@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharacterControler : MonoBehaviour
+public class HudController : MonoBehaviour
 {   
     
     int currentHealth = 0;
