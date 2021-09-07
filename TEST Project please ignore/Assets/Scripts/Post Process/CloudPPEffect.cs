@@ -12,6 +12,8 @@ public sealed class CloudPPEffect : CustomPostProcessVolumeComponent, IPostProce
     // Paramethars
     // general
     [Header("General")]
+    public BoolParameter HighResolution = new BoolParameter(false);
+    public ClampedIntParameter NumberOfSamples = new ClampedIntParameter(8, 4, 64);
     public MinFloatParameter Scale = new MinFloatParameter(1, 0.001f);
     public Vector3Parameter Location = new Vector3Parameter(Vector3.zero);
     public MinFloatParameter Radius = new MinFloatParameter(10, 1);
@@ -57,6 +59,9 @@ public sealed class CloudPPEffect : CustomPostProcessVolumeComponent, IPostProce
     public override void Render(CommandBuffer cmd, HDCamera camera, RTHandle source, RTHandle destination) {
         if (m_Material == null)
             return;
+
+        m_Material.SetInt("_high_resolution", (HighResolution == true)? 1 : 0);
+        m_Material.SetInt("_number_of_samples", NumberOfSamples.value);
 
         m_Material.SetMatrix("_ViewProjectInverse", (camera.camera.projectionMatrix * camera.camera.worldToCameraMatrix).inverse);
         m_Material.SetFloat("_Intensity", intensity.value);
